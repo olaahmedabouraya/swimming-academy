@@ -1,0 +1,94 @@
+<div class="profile-container">
+      <nav class="navbar">
+        <div class="nav-content">
+          <app-logo></app-logo>
+          <div class="nav-actions">
+            <span class="user-name">{{ authService.currentUser()?.name }}</span>
+            <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/player" routerLinkActive="active">Dashboard</a></li>
+            <li><a routerLink="/player/profile" routerLinkActive="active">My Profile</a></li>
+            <li><a routerLink="/player/schedule" routerLinkActive="active">Schedule</a></li>
+            <li><a routerLink="/player/attendance" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/player/ratings" routerLinkActive="active">Ratings</a></li>
+          </ul>
+        </aside>
+
+        <main class="main-content fade-in">
+          <h1>My Profile</h1>
+
+          <div *ngIf="loading()" class="loading">
+            <div class="spinner"></div>
+          </div>
+
+          <div *ngIf="!loading() && playerData()" class="profile-grid">
+            <div class="profile-card">
+              <div class="profile-header">
+                <div class="avatar">{{ playerData()?.user?.name?.charAt(0) }}</div>
+                <h2>{{ playerData()?.user?.name }}</h2>
+                <p class="level-badge" [class]="'level-' + playerData()?.level">{{ playerData()?.level }}</p>
+              </div>
+
+              <div class="profile-details">
+                <div class="detail-item">
+                  <span class="label">Email:</span>
+                  <span class="value">{{ playerData()?.user?.email }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Phone:</span>
+                  <span class="value">{{ playerData()?.user?.phone || 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Date of Birth:</span>
+                  <span class="value">{{ playerData()?.user?.date_of_birth || 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Address:</span>
+                  <span class="value">{{ playerData()?.user?.address || 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Enrollment Date:</span>
+                  <span class="value">{{ playerData()?.enrollment_date }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Status:</span>
+                  <span class="value status-badge" [class]="'status-' + playerData()?.status">{{ playerData()?.status }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <h3>Branch Information</h3>
+              <div class="detail-item">
+                <span class="label">Branch Name:</span>
+                <span class="value">{{ playerData()?.branch?.name || 'Not assigned' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Address:</span>
+                <span class="value">{{ playerData()?.branch?.address || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Phone:</span>
+                <span class="value">{{ playerData()?.branch?.phone || 'N/A' }}</span>
+              </div>
+            </div>
+
+            <div class="profile-card" *ngIf="playerData()?.medical_notes">
+              <h3>Medical Notes</h3>
+              <p>{{ playerData()?.medical_notes }}</p>
+            </div>
+
+            <div class="profile-card" *ngIf="playerData()?.emergency_contact">
+              <h3>Emergency Contact</h3>
+              <p>{{ playerData()?.emergency_contact }}</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>

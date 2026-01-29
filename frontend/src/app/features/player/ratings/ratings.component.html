@@ -1,0 +1,96 @@
+<div class="ratings-container">
+      <nav class="navbar">
+        <div class="nav-content">
+          <app-logo></app-logo>
+          <div class="nav-actions">
+            <span class="user-name">{{ authService.currentUser()?.name }}</span>
+            <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/player" routerLinkActive="active">Dashboard</a></li>
+            <li><a routerLink="/player/profile" routerLinkActive="active">My Profile</a></li>
+            <li><a routerLink="/player/schedule" routerLinkActive="active">Schedule</a></li>
+            <li><a routerLink="/player/attendance" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/player/ratings" routerLinkActive="active">Ratings</a></li>
+          </ul>
+        </aside>
+
+        <main class="main-content fade-in">
+          <h1>My Ratings</h1>
+
+          <div *ngIf="loading()" class="loading">
+            <div class="spinner"></div>
+          </div>
+
+          <div *ngIf="!loading() && averageRating() > 0" class="overall-rating">
+            <div class="rating-card">
+              <h2>Overall Average Rating</h2>
+              <div class="rating-score">{{ averageRating() | number:'1.1-1' }}</div>
+              <div class="rating-stars">
+                <span *ngFor="let star of getStars(averageRating())">⭐</span>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!loading() && ratings().length > 0" class="ratings-list">
+            <div *ngFor="let rating of ratings(); let i = index" class="rating-item slide-in" [style.animation-delay]="i * 0.1 + 's'">
+              <div class="rating-header">
+                <div>
+                  <h3>Rating Date: {{ rating.rating_date | date:'MMM dd, yyyy' }}</h3>
+                  <p>Rated by: {{ rating.rated_by?.name }}</p>
+                </div>
+                <div class="overall-score">{{ rating.overall_score | number:'1.0-0' }}</div>
+              </div>
+
+              <div class="rating-scores">
+                <div class="score-item">
+                  <span class="score-label">Technique</span>
+                  <div class="score-bar">
+                    <div class="score-fill" [style.width.%]="rating.technique_score"></div>
+                  </div>
+                  <span class="score-value">{{ rating.technique_score }}</span>
+                </div>
+
+                <div class="score-item">
+                  <span class="score-label">Endurance</span>
+                  <div class="score-bar">
+                    <div class="score-fill" [style.width.%]="rating.endurance_score"></div>
+                  </div>
+                  <span class="score-value">{{ rating.endurance_score }}</span>
+                </div>
+
+                <div class="score-item">
+                  <span class="score-label">Speed</span>
+                  <div class="score-bar">
+                    <div class="score-fill" [style.width.%]="rating.speed_score"></div>
+                  </div>
+                  <span class="score-value">{{ rating.speed_score }}</span>
+                </div>
+
+                <div class="score-item">
+                  <span class="score-label">Attitude</span>
+                  <div class="score-bar">
+                    <div class="score-fill" [style.width.%]="rating.attitude_score"></div>
+                  </div>
+                  <span class="score-value">{{ rating.attitude_score }}</span>
+                </div>
+              </div>
+
+              <div *ngIf="rating.comments" class="rating-comments">
+                <strong>Comments:</strong>
+                <p>{{ rating.comments }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!loading() && ratings().length === 0" class="empty-state">
+            <p>No ratings available yet.</p>
+          </div>
+        </main>
+      </div>
+    </div>

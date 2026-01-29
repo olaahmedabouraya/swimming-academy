@@ -1,0 +1,414 @@
+<div class="players-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/manager" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a></li>
+            <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+            <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+            <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+            <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+            <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+            <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+            <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+            <li><a routerLink="/manager/settings" routerLinkActive="active">Settings</a></li>
+          </ul>
+        </aside>
+
+    <main class="main-content fade-in">
+      <div class="header-actions">
+        <h1>Players Management</h1>
+        <button class="btn btn-primary" (click)="openAddModal()">+ Add Player</button>
+      </div>
+
+      <div class="filters">
+        <select [(ngModel)]="filterLevel" (change)="loadPlayers()">
+          <option value="">All Levels</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+          <option value="professional">Professional</option>
+        </select>
+      </div>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading() && players().length > 0" class="players-grid">
+        <div *ngFor="let player of players(); let i = index" class="player-card slide-in" [style.animation-delay]="i * 0.05 + 's'">
+          <div class="player-header">
+            <div class="player-avatar">{{ player.user?.name?.charAt(0) }}</div>
+            <div>
+              <h3>{{ player.user?.name }}</h3>
+              <p>{{ player.user?.email }}</p>
+            </div>
+          </div>
+          <div class="player-details">
+            <div class="detail-row">
+              <span>Level:</span>
+              <span class="level-badge" [class]="'level-' + player.level">{{ player.level }}</span>
+            </div>
+            <div class="detail-row">
+              <span>Branch:</span>
+              <span>{{ player.branch?.name || 'Not assigned' }}</span>
+            </div>
+            <div class="detail-row">
+              <span>Enrollment:</span>
+              <span>{{ player.enrollment_date | date:'shortDate' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="player.coach">
+              <span>Coach:</span>
+              <span>{{ player.coach?.user?.name }}</span>
+            </div>
+            <div class="detail-row" *ngIf="player.enrollment_type">
+              <span>Enrollment Type:</span>
+              <span class="enrollment-type-badge" [class]="'type-' + player.enrollment_type">
+                {{ player.enrollment_type === 'monthly' ? 'Monthly (8 sessions)' : 'Per Session' }}
+              </span>
+            </div>
+            <div class="detail-row" *ngIf="player.enrollment_type === 'monthly' && player.sessions_per_month">
+              <span>Remaining Sessions:</span>
+              <span class="remaining-sessions">{{ (player.sessions_per_month || 0) - (player.sessions_used || 0) }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <div class="primary-actions">
+              <button class="btn btn-sm btn-primary" (click)="window.alert('Edit functionality coming soon')" title="Edit Player">
+                <span class="btn-icon">✏️</span>
+                <span class="btn-text">Edit</span>
+              </button>
+              <button class="btn btn-sm btn-danger" (click)="window.alert('Delete functionality coming soon')" title="Delete Player">
+                <span class="btn-icon">🗑️</span>
+                <span class="btn-text">Delete</span>
+              </button>
+            </div>
+            <div class="actions-menu">
+              <button class="btn-menu-toggle" (click)="toggleActionsMenu($event, player)" title="More Actions" type="button">
+                <span>⋯</span>
+              </button>
+              <div class="actions-dropdown" [class.show]="activeMenuPlayerId() === player.id" (click)="$event.stopPropagation()">
+                <button class="dropdown-item" (click)="openMoveSessionModal(player); closeActionsMenu()" type="button">
+                  <span class="item-icon">🔄</span>
+                  <span>Move Session</span>
+                </button>
+                <button class="dropdown-item" (click)="openNotesModal(player); closeActionsMenu()" type="button">
+                  <span class="item-icon">📝</span>
+                  <span>Manager Notes</span>
+                </button>
+                <button class="dropdown-item" (click)="openFamilyModal(player); closeActionsMenu()" type="button">
+                  <span class="item-icon">👨‍👩‍👧‍👦</span>
+                  <span>Family Discount</span>
+                </button>
+                <button class="dropdown-item" (click)="openCoachModal(player); closeActionsMenu()" type="button">
+                  <span class="item-icon">👤</span>
+                  <span>Assign Coach</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && players().length === 0" class="empty-state">
+        <p>No players found.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Player Modal -->
+  <div *ngIf="showAddModal()" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add New Player</h2>
+        <button class="modal-close" (click)="closeAddModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="savePlayer()">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" [(ngModel)]="newPlayer().name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="newPlayer().email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" [(ngModel)]="newPlayer().password" name="password" required>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" [(ngModel)]="newPlayer().password_confirmation" name="password_confirmation" required>
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" [(ngModel)]="newPlayer().phone" name="phone">
+          </div>
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" [(ngModel)]="newPlayer().date_of_birth" name="date_of_birth">
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <textarea [(ngModel)]="newPlayer().address" name="address" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Branch</label>
+            <select [(ngModel)]="newPlayer().branch_id" name="branch_id">
+              <option [value]="null">Select Branch</option>
+              <option *ngFor="let branch of branches()" [value]="branch.id">{{ branch.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Level *</label>
+            <select [(ngModel)]="newPlayer().level" name="level" required>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+              <option value="professional">Professional</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Enrollment Type *</label>
+            <select [(ngModel)]="newPlayer().enrollment_type" name="enrollment_type" required>
+              <option value="monthly">Monthly (8 sessions)</option>
+              <option value="per_session">Per Session</option>
+            </select>
+          </div>
+          <div class="form-group" *ngIf="newPlayer().enrollment_type === 'monthly'">
+            <label>Sessions Per Month</label>
+            <input type="number" [(ngModel)]="newPlayer().sessions_per_month" name="sessions_per_month" min="1" max="12" value="8">
+            <small>Default: 8 sessions per month (twice per week). Period dates are configured globally in Settings.</small>
+          </div>
+          <div class="form-group">
+            <label>Initial Session</label>
+            <select [(ngModel)]="newPlayer().current_session_id" name="current_session_id">
+              <option [value]="null">Select Session (Optional)</option>
+              <option *ngFor="let session of availableSessions()" [value]="session.id">
+                {{ session.day_of_week }} {{ session.start_time }} - {{ session.end_time }} ({{ session.branch?.name }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Initial Coach</label>
+            <select [(ngModel)]="newPlayer().coach_id" name="coach_id">
+              <option [value]="null">Select Coach (Optional)</option>
+              <option *ngFor="let coach of coaches()" [value]="coach.id">
+                {{ coach.user?.name }} - {{ coach.specialization || 'General' }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Enrollment Date *</label>
+            <input type="date" [(ngModel)]="newPlayer().enrollment_date" name="enrollment_date" required>
+          </div>
+          <div class="form-group">
+            <label>Medical Notes</label>
+            <textarea [(ngModel)]="newPlayer().medical_notes" name="medical_notes" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Emergency Contact</label>
+            <input type="text" [(ngModel)]="newPlayer().emergency_contact" name="emergency_contact">
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Save Player' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Move Session Modal -->
+  <div *ngIf="showMoveSessionModal()" class="modal-overlay" (click)="closeMoveSessionModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Move Player to Different Session</h2>
+        <button class="modal-close" (click)="closeMoveSessionModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedPlayerForMove()" class="player-info-section">
+          <h3>{{ selectedPlayerForMove()?.user?.name }}</h3>
+          <p>Current Session: {{ selectedPlayerForMove()?.training_session?.day_of_week }} {{ selectedPlayerForMove()?.training_session?.start_time }} - {{ selectedPlayerForMove()?.training_session?.end_time }}</p>
+        </div>
+        
+        <form (ngSubmit)="movePlayerSession()">
+          <div class="form-group">
+            <label>Select New Session *</label>
+            <select [(ngModel)]="selectedSessionId" name="session_id" required>
+              <option [value]="null">Select a session</option>
+              <option *ngFor="let session of availableSessions()" [value]="session.id">
+                {{ session.day_of_week }} - {{ session.start_time }} to {{ session.end_time }} ({{ session.branch?.name }})
+              </option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeMoveSessionModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="moving() || !selectedSessionId()">
+              {{ moving() ? 'Moving...' : 'Move Player' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sports Manager Notes Modal -->
+  <div *ngIf="showNotesModal()" class="modal-overlay" (click)="closeNotesModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Sports Manager Notes</h2>
+        <button class="modal-close" (click)="closeNotesModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedPlayerForNotes()" class="player-info-section">
+          <h3>{{ selectedPlayerForNotes()?.user?.name }}</h3>
+        </div>
+        
+        <form (ngSubmit)="saveSportsManagerNotes()">
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea 
+              [(ngModel)]="sportsManagerNotes" 
+              name="notes" 
+              rows="8" 
+              placeholder="Enter sports manager notes about this player..."
+              maxlength="5000"
+            ></textarea>
+            <small>{{ sportsManagerNotes().length }}/5000 characters</small>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeNotesModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="savingNotes()">
+              {{ savingNotes() ? 'Saving...' : 'Save Notes' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Family Discount Modal -->
+  <div *ngIf="showFamilyModal()" class="modal-overlay" (click)="closeFamilyModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Family Discount Management</h2>
+        <button class="modal-close" (click)="closeFamilyModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedPlayerForFamily()" class="player-info-section">
+          <h3>{{ selectedPlayerForFamily()?.user?.name }}</h3>
+          <p>Manage family relationships to apply discounts automatically</p>
+        </div>
+        
+        <div class="family-relationships-section">
+          <h4>Existing Relationships</h4>
+          <div *ngIf="loadingFamily()" class="loading">
+            <div class="spinner"></div>
+          </div>
+          <div *ngIf="!loadingFamily() && familyRelationships().length > 0" class="relationships-list">
+            <div *ngFor="let rel of familyRelationships()" class="relationship-item">
+              <div class="relationship-info">
+                <span class="relationship-type">{{ rel.relationship_type }}</span>
+                <span class="related-player">{{ rel.related_player?.user?.name }}</span>
+                <span class="discount">{{ rel.discount_percentage }}% discount</span>
+              </div>
+              <button class="btn btn-sm btn-danger" (click)="deleteFamilyRelationship(rel.id!)">Delete</button>
+            </div>
+          </div>
+          <div *ngIf="!loadingFamily() && familyRelationships().length === 0" class="empty-state">
+            <p>No family relationships found. Add one below.</p>
+          </div>
+        </div>
+
+        <div class="add-relationship-section">
+          <h4>Add New Relationship</h4>
+          <form (ngSubmit)="saveFamilyRelationship()">
+            <div class="form-group">
+              <label>Related Player *</label>
+              <select [(ngModel)]="newRelationship().related_player_id" name="related_player_id" required>
+                <option [value]="null">Select Player</option>
+                <option *ngFor="let player of players()" [value]="player.id" [disabled]="player.id === selectedPlayerForFamily()?.id">
+                  {{ player.user?.name }} ({{ player.user?.email }})
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Relationship Type *</label>
+              <select [(ngModel)]="newRelationship().relationship_type" name="relationship_type" required>
+                <option value="sibling">Sibling</option>
+                <option value="parent">Parent</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Discount Percentage *</label>
+              <input 
+                type="number" 
+                [(ngModel)]="newRelationship().discount_percentage" 
+                name="discount_percentage" 
+                min="0" 
+                max="100" 
+                step="0.1"
+                required
+              >
+              <small>Discount will be applied automatically when calculating fees</small>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" (click)="closeFamilyModal()">Close</button>
+              <button type="submit" class="btn btn-primary" [disabled]="savingRelationship()">
+                {{ savingRelationship() ? 'Adding...' : 'Add Relationship' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Coach Modal -->
+  <div *ngIf="showCoachModal()" class="modal-overlay" (click)="closeCoachModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Assign Coach to Player</h2>
+        <button class="modal-close" (click)="closeCoachModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedPlayerForCoach()" class="player-info-section">
+          <h3>{{ selectedPlayerForCoach()?.user?.name }}</h3>
+          <p *ngIf="selectedPlayerForCoach()?.coach">Current Coach: {{ selectedPlayerForCoach()?.coach?.user?.name }}</p>
+        </div>
+        
+        <form (ngSubmit)="assignCoachToPlayer()">
+          <div class="form-group">
+            <label>Select Coach *</label>
+            <select [(ngModel)]="selectedCoachId" name="coach_id">
+              <option [value]="null">No Coach (Remove)</option>
+              <option *ngFor="let coach of coaches()" [value]="coach.id">
+                {{ coach.user?.name }} - {{ coach.specialization || 'General' }} (${{ coach.hourly_rate | number:'1.2-2' }}/hr)
+              </option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeCoachModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="assigningCoach()">
+              {{ assigningCoach() ? 'Assigning...' : 'Assign Coach' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

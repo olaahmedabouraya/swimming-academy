@@ -1,0 +1,240 @@
+<div class="coaches-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/manager" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a></li>
+            <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+            <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+            <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+            <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+            <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+            <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+            <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+            <li><a routerLink="/manager/settings" routerLinkActive="active">Settings</a></li>
+          </ul>
+        </aside>
+
+    <main class="main-content fade-in">
+      <div class="header-actions">
+        <h1>Coaches Management</h1>
+        <button class="btn btn-primary" (click)="openAddModal()">+ Add Coach</button>
+      </div>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading() && coaches().length > 0" class="coaches-grid">
+        <div *ngFor="let coach of coaches(); let i = index" class="coach-card slide-in" [style.animation-delay]="i * 0.1 + 's'">
+          <div class="coach-header">
+            <div class="coach-avatar">🏊</div>
+            <div>
+              <h3>{{ coach.user?.name }}</h3>
+              <p>{{ coach.user?.email }}</p>
+            </div>
+          </div>
+          <div class="coach-details">
+            <div class="detail-item">
+              <span class="icon">💰</span>
+              <span>Hourly Rate: ${{ coach.hourly_rate | number:'1.2-2' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="coach.specialization">
+              <span class="icon">🎯</span>
+              <span>{{ coach.specialization }}</span>
+            </div>
+            <div class="detail-item" *ngIf="coach.branch">
+              <span class="icon">🏢</span>
+              <span>{{ coach.branch?.name }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="icon">👥</span>
+              <span>Players: {{ coach.players?.length || 0 }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-secondary" (click)="openEditModal(coach)">Edit</button>
+            <button class="btn btn-sm btn-primary" (click)="openStatsModal(coach)">View Stats</button>
+            <button class="btn btn-sm btn-danger" (click)="deleteCoach(coach.id!)">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && coaches().length === 0" class="empty-state">
+        <div class="empty-icon">🏊</div>
+        <h3>No Coaches Yet</h3>
+        <p>Get started by adding your first coach to the system.</p>
+        <button class="btn btn-primary" (click)="openAddModal()" style="margin-top: 20px;">
+          <span>➕</span>
+          <span>Add Your First Coach</span>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Coach Modal -->
+  <div *ngIf="showAddModal() && !editingCoach()" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add New Coach</h2>
+        <button class="modal-close" (click)="closeAddModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="saveCoach()">
+          <div class="form-group">
+            <label>User (Select existing user) *</label>
+            <select [(ngModel)]="newCoach().user_id" name="user_id" required>
+              <option [value]="null">Select User</option>
+              <!-- In a real app, you'd load users here -->
+              <option value="1">User 1</option>
+            </select>
+            <small>Note: User must be created first</small>
+          </div>
+          <div class="form-group">
+            <label>Branch</label>
+            <select [(ngModel)]="newCoach().branch_id" name="branch_id">
+              <option [value]="null">Select Branch</option>
+              <option *ngFor="let branch of branches()" [value]="branch.id">{{ branch.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Specialization</label>
+            <input type="text" [(ngModel)]="newCoach().specialization" name="specialization" placeholder="e.g., Freestyle, Backstroke">
+          </div>
+          <div class="form-group">
+            <label>Hourly Rate *</label>
+            <input type="number" [(ngModel)]="newCoach().hourly_rate" name="hourly_rate" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea [(ngModel)]="newCoach().notes" name="notes" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Save Coach' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Coach Modal -->
+  <div *ngIf="showAddModal() && editingCoach()" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Edit Coach</h2>
+        <button class="modal-close" (click)="closeAddModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="updateCoach()">
+          <div class="form-group">
+            <label>User (Select existing user) *</label>
+            <select [(ngModel)]="newCoach().user_id" name="user_id" required>
+              <option [value]="null">Select User</option>
+              <!-- In a real app, you'd load users here -->
+              <option value="1">User 1</option>
+            </select>
+            <small>Note: User must be created first</small>
+          </div>
+          <div class="form-group">
+            <label>Branch</label>
+            <select [(ngModel)]="newCoach().branch_id" name="branch_id">
+              <option [value]="null">Select Branch</option>
+              <option *ngFor="let branch of branches()" [value]="branch.id">{{ branch.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Specialization</label>
+            <input type="text" [(ngModel)]="newCoach().specialization" name="specialization" placeholder="e.g., Freestyle, Backstroke">
+          </div>
+          <div class="form-group">
+            <label>Hourly Rate *</label>
+            <input type="number" [(ngModel)]="newCoach().hourly_rate" name="hourly_rate" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea [(ngModel)]="newCoach().notes" name="notes" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Updating...' : 'Update Coach' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Modal -->
+  <div *ngIf="showStatsModal() && selectedCoach()" class="modal-overlay" (click)="closeStatsModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Coach Statistics - {{ selectedCoach()?.user?.name }}</h2>
+        <button class="modal-close" (click)="closeStatsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="stats-filters">
+          <div class="filter-group">
+            <label>From Date:</label>
+            <input type="date" [(ngModel)]="statsStartDate" (change)="onStatsDateChange()" />
+          </div>
+          <div class="filter-group">
+            <label>To Date:</label>
+            <input type="date" [(ngModel)]="statsEndDate" (change)="onStatsDateChange()" />
+          </div>
+        </div>
+
+        <div *ngIf="loadingStats()" class="loading">
+          <div class="spinner"></div>
+        </div>
+
+        <div *ngIf="!loadingStats() && coachStats()" class="stats-display">
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-info">
+              <h3>{{ coachStats()?.total_attendances || 0 }}</h3>
+              <p>Total Attendances</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-info">
+              <h3>{{ coachStats()?.total_hours || 0 | number:'1.1-1' }}</h3>
+              <p>Total Hours</p>
+            </div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+              <h3>${{ coachStats()?.calculated_salary || coachStats()?.total_salary || 0 | number:'1.2-2' }}</h3>
+              <p>Calculated Salary</p>
+              <small *ngIf="selectedCoach() && coachStats()?.total_hours">
+                ({{ selectedCoach()?.hourly_rate | number:'1.2-2' }}/hr × {{ coachStats()?.total_hours | number:'1.1-1' }} hrs)
+              </small>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+              <h3>{{ coachStats()?.late_count || 0 }}</h3>
+              <p>Late Count</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,95 @@
+<div class="register-container">
+  <div class="register-card fade-in">
+    <div class="register-header">
+      <app-logo></app-logo>
+      <p>Create your account to get started</p>
+    </div>
+    
+    <form (ngSubmit)="onSubmit()" class="register-form">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input
+          type="text"
+          id="name"
+          [(ngModel)]="formData.name"
+          name="name"
+          required
+          placeholder="Enter your full name"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          [(ngModel)]="formData.email"
+          name="email"
+          required
+          placeholder="Enter your email"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="formData.password"
+          name="password"
+          required
+          placeholder="Enter your password"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="password_confirmation">Confirm Password</label>
+        <input
+          type="password"
+          id="password_confirmation"
+          [(ngModel)]="formData.password_confirmation"
+          name="password_confirmation"
+          required
+          placeholder="Confirm your password"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="role">Account Type</label>
+        <select
+          id="role"
+          [(ngModel)]="formData.role"
+          name="role"
+          required
+        >
+          <option value="player">Player</option>
+          <option value="manager">Manager</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="phone">Phone (Optional)</label>
+        <input
+          type="tel"
+          id="phone"
+          [(ngModel)]="formData.phone"
+          name="phone"
+          placeholder="Enter your phone number"
+        />
+      </div>
+      
+      <div *ngIf="error()" class="error-message">
+        {{ error() }}
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="loading()">
+        <span *ngIf="!loading()">Register</span>
+        <span *ngIf="loading()">Creating account...</span>
+      </button>
+    </form>
+    
+    <div class="register-footer">
+      <p>Already have an account? <a routerLink="/login">Login here</a></p>
+    </div>
+  </div>
+</div>

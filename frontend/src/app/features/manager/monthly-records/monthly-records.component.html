@@ -1,0 +1,155 @@
+<div class="records-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/manager" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a></li>
+            <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+            <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+            <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+            <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+            <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+            <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+            <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+            <li><a routerLink="/manager/settings" routerLinkActive="active">Settings</a></li>
+          </ul>
+        </aside>
+
+    <main class="main-content fade-in">
+      <div class="header-actions">
+        <h1>Monthly Records</h1>
+        <button class="btn btn-primary" (click)="openAddModal()">+ Add Record</button>
+      </div>
+
+      <div class="filters">
+        <select [(ngModel)]="filterYear" (change)="loadRecords()">
+          <option value="">All Years</option>
+          <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+        </select>
+        <select [(ngModel)]="filterMonth" (change)="loadRecords()">
+          <option value="">All Months</option>
+          <option *ngFor="let month of months; let i = index" [value]="i + 1">{{ month }}</option>
+        </select>
+      </div>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading() && records().length > 0" class="records-list">
+        <div *ngFor="let record of records(); let i = index" class="record-card slide-in" [style.animation-delay]="i * 0.05 + 's'">
+          <div class="record-header">
+            <div>
+              <h3>{{ getMonthName(record.month) }} {{ record.year }}</h3>
+              <p>{{ record.branch?.name }}</p>
+            </div>
+            <div class="revenue-badge">${{ record.revenue | number:'1.0-0' }}</div>
+          </div>
+          <div class="record-stats">
+            <div class="stat-item">
+              <span class="stat-label">New Enrollments</span>
+              <span class="stat-value">{{ record.new_enrollments }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Active Players</span>
+              <span class="stat-value">{{ record.total_active_players }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Selling Rate</span>
+              <span class="stat-value">{{ record.selling_rate }}%</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Sessions</span>
+              <span class="stat-value">{{ record.total_sessions_conducted }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Attendance</span>
+              <span class="stat-value">{{ record.total_attendance }}</span>
+            </div>
+          </div>
+          <div *ngIf="record.notes" class="record-notes">
+            <strong>Notes:</strong> {{ record.notes }}
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-primary" (click)="window.alert('Edit functionality coming soon')">Edit</button>
+            <button class="btn btn-sm btn-danger" (click)="window.alert('Delete functionality coming soon')">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && records().length === 0" class="empty-state">
+        <p>No monthly records found.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Record Modal -->
+  <div *ngIf="showAddModal()" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add Monthly Record</h2>
+        <button class="modal-close" (click)="closeAddModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="saveRecord()">
+          <div class="form-group">
+            <label>Year</label>
+            <select [(ngModel)]="newRecord().year" name="year" required>
+              <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Month</label>
+            <select [(ngModel)]="newRecord().month" name="month" required>
+              <option *ngFor="let month of months; let i = index" [value]="i + 1">{{ month }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Revenue</label>
+            <input type="number" [(ngModel)]="newRecord().revenue" name="revenue" required min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>New Enrollments</label>
+            <input type="number" [(ngModel)]="newRecord().new_enrollments" name="new_enrollments" required min="0">
+          </div>
+          <div class="form-group">
+            <label>Active Players</label>
+            <input type="number" [(ngModel)]="newRecord().total_active_players" name="total_active_players" required min="0">
+          </div>
+          <div class="form-group">
+            <label>Selling Rate (%)</label>
+            <input type="number" [(ngModel)]="newRecord().selling_rate" name="selling_rate" required min="0" max="100" step="0.1">
+          </div>
+          <div class="form-group">
+            <label>Total Sessions</label>
+            <input type="number" [(ngModel)]="newRecord().total_sessions_conducted" name="total_sessions_conducted" required min="0">
+          </div>
+          <div class="form-group">
+            <label>Total Attendance</label>
+            <input type="number" [(ngModel)]="newRecord().total_attendance" name="total_attendance" required min="0">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea [(ngModel)]="newRecord().notes" name="notes" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Save Record' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

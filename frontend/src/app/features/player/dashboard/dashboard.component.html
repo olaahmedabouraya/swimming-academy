@@ -1,0 +1,89 @@
+<div class="dashboard-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+    <aside class="sidebar">
+      <ul class="nav-menu">
+        <li><a routerLink="/player" routerLinkActive="active">Dashboard</a></li>
+        <li><a routerLink="/player/profile" routerLinkActive="active">My Profile</a></li>
+        <li><a routerLink="/player/schedule" routerLinkActive="active">Schedule</a></li>
+        <li><a routerLink="/player/attendance" routerLinkActive="active">Attendance</a></li>
+        <li><a routerLink="/player/ratings" routerLinkActive="active">Ratings</a></li>
+      </ul>
+    </aside>
+
+    <main class="main-content fade-in">
+      <div class="welcome-section">
+        <h1>Welcome back, {{ authService.currentUser()?.name }}! 👋</h1>
+        <p>Here's your Olympia Academy overview</p>
+      </div>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading() && playerData()" class="stats-grid">
+        <div class="stat-card slide-in">
+          <div class="stat-icon">📊</div>
+          <div class="stat-info">
+            <h3>{{ playerData()?.average_rating || 0 }}</h3>
+            <p>Average Rating</p>
+          </div>
+        </div>
+
+        <div class="stat-card slide-in" style="animation-delay: 0.1s">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <h3>{{ playerData()?.schedules?.length || 0 }}</h3>
+            <p>Weekly Sessions</p>
+          </div>
+        </div>
+
+        <div class="stat-card slide-in" style="animation-delay: 0.2s">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <h3>{{ playerData()?.total_attendances || 0 }}</h3>
+            <p>Total Attendances</p>
+          </div>
+        </div>
+
+        <div class="stat-card slide-in" style="animation-delay: 0.3s">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-info">
+            <h3>{{ playerData()?.level || 'N/A' }}</h3>
+            <p>Current Level</p>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && playerData()" class="quick-info">
+        <div class="info-card">
+          <h3>Branch Information</h3>
+          <p><strong>Branch:</strong> {{ playerData()?.branch?.name || 'Not assigned' }}</p>
+          <p><strong>Address:</strong> {{ playerData()?.branch?.address || 'N/A' }}</p>
+        </div>
+
+        <div class="info-card">
+          <h3>Upcoming Sessions</h3>
+          <div *ngIf="playerData()?.schedules && playerData()?.schedules.length > 0; else noSchedules">
+            <div *ngFor="let schedule of playerData()?.schedules" class="schedule-item">
+              <span class="day">{{ schedule.day_of_week }}</span>
+              <span class="time">{{ schedule.start_time }} - {{ schedule.end_time }}</span>
+            </div>
+          </div>
+          <ng-template #noSchedules>
+            <p>No scheduled sessions</p>
+          </ng-template>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

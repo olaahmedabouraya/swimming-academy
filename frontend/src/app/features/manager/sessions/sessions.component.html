@@ -1,0 +1,283 @@
+<div class="sessions-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/manager" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a></li>
+            <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+            <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+            <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+            <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+            <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+            <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+            <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+            <li><a routerLink="/manager/settings" routerLinkActive="active">Settings</a></li>
+          </ul>
+        </aside>
+
+    <main class="main-content fade-in">
+      <div class="header-actions">
+        <h1>Training Sessions Configuration</h1>
+        <div class="header-buttons">
+          <button class="btn btn-secondary" (click)="toggleViewMode()">
+            <span>{{ viewMode() === 'calendar' ? '📋' : '📅' }}</span>
+            <span>{{ viewMode() === 'calendar' ? 'List View' : 'Calendar View' }}</span>
+          </button>
+          <button class="btn btn-primary" (click)="openAddModal()">
+            <span>➕</span>
+            <span>Add Session</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>Select Date:</label>
+          <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" />
+        </div>
+        <div class="filter-group">
+          <label>Filter by Branch:</label>
+          <select [(ngModel)]="filterBranchId" (change)="onBranchFilterChange()">
+            <option [value]="null">All Branches</option>
+            <option *ngFor="let branch of branches()" [value]="branch.id">{{ branch.name }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Filter by Group:</label>
+          <select [(ngModel)]="filterGroupValue" (change)="onGroupFilterChange()">
+            <option [value]="null">All Groups</option>
+            <option *ngFor="let group of getUniqueGroups()" [value]="group">{{ group }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <!-- Calendar View -->
+      <div *ngIf="!loading() && viewMode() === 'calendar'" class="calendar-view">
+        <app-calendar
+          [selectedDate]="calendarSelectedDate()"
+          [events]="calendarEvents()"
+          (dateSelected)="onCalendarDateSelected($event)"
+        ></app-calendar>
+        
+        <div *ngIf="sessions().length > 0 && getSessionsForDate(calendarSelectedDate()!).length > 0" class="sessions-list-calendar">
+          <h3>Sessions for {{ calendarSelectedDate() | date:'fullDate' }}</h3>
+          <div class="sessions-grid">
+            <div *ngFor="let session of getSessionsForDate(calendarSelectedDate()!)" class="session-card">
+              <div class="session-header">
+                <div>
+                  <h3>{{ session.day_of_week }}</h3>
+                  <p class="session-time">{{ formatTime(session.start_time) }} - {{ formatTime(session.end_time) }}</p>
+                </div>
+                <div class="session-actions">
+                  <button class="btn btn-sm btn-primary" (click)="openEditModal(session)">Edit Times</button>
+                  <button class="btn btn-sm btn-danger" (click)="deleteSession(session.id!)">Delete</button>
+                </div>
+              </div>
+              <div class="session-details">
+                <div class="detail-item">
+                  <span class="icon">🏢</span>
+                  <span>{{ session.branch?.name }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="icon">👥</span>
+                  <span>Capacity: {{ session.max_capacity }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="getSessionsForDate(calendarSelectedDate()!).length === 0" class="sessions-list-calendar">
+          <h3>Sessions for {{ calendarSelectedDate() | date:'fullDate' }}</h3>
+          <div class="empty-state">
+            <p>📭 No sessions scheduled for this date.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- List View -->
+      <div *ngIf="!loading() && viewMode() === 'list' && sessions().length > 0" class="sessions-grid">
+        <div *ngFor="let session of sessions(); let i = index" class="session-card slide-in" [style.animation-delay]="i * 0.1 + 's'">
+          <div class="session-header">
+            <div>
+              <h3>{{ session.day_of_week }}</h3>
+              <p class="session-time">{{ formatTime(session.start_time) }} - {{ formatTime(session.end_time) }}</p>
+            </div>
+            <div class="session-actions">
+              <button class="btn btn-sm btn-danger" (click)="deleteSession(session.id!)">Delete</button>
+            </div>
+          </div>
+          <div class="session-details">
+            <div class="detail-item">
+              <span class="icon">🏢</span>
+              <span>{{ session.branch?.name }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="icon">👥</span>
+              <span>Capacity: {{ session.max_capacity }}</span>
+            </div>
+            <div class="detail-item" *ngIf="session.start_date">
+              <span class="icon">📅</span>
+              <span>From: {{ session.start_date | date:'shortDate' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="session.end_date">
+              <span class="icon">📅</span>
+              <span>To: {{ session.end_date | date:'shortDate' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="session.notes">
+              <span class="icon">📝</span>
+              <span>{{ session.notes }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && sessions().length === 0" class="empty-state">
+        <p>No sessions found for the selected date. Create a new session to get started.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Session Modal -->
+  <div *ngIf="showAddModal()" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Configure Training Session</h2>
+        <button class="modal-close" (click)="closeAddModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="saveSession()">
+          <div class="form-group">
+            <label>Branch *</label>
+            <select [(ngModel)]="newSession().branch_id" name="branch_id" required>
+              <option [value]="null">Select Branch</option>
+              <option *ngFor="let branch of branches()" [value]="branch.id">{{ branch.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Group Number</label>
+            <input type="number" [(ngModel)]="newSessionGroup" name="group" min="1" placeholder="Enter group number (optional)">
+          </div>
+          <div class="form-group">
+            <label>Day of Week *</label>
+            <select [(ngModel)]="newSession().day_of_week" name="day_of_week" required>
+              <option *ngFor="let day of daysOfWeek" [value]="day">{{ day }}</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Time *</label>
+              <input type="time" [(ngModel)]="newSession().start_time" name="start_time" required>
+            </div>
+            <div class="form-group">
+              <label>End Time *</label>
+              <input type="time" [(ngModel)]="newSession().end_time" name="end_time" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" [(ngModel)]="newSession().start_date" name="start_date" (change)="onStartDateChange()">
+            </div>
+            <div class="form-group">
+              <label>End Date (Optional)</label>
+              <input type="date" [(ngModel)]="newSession().end_date" name="end_date">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Max Capacity</label>
+            <input type="number" [(ngModel)]="newSession().max_capacity" name="max_capacity" min="1" required>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea [(ngModel)]="newSession().notes" name="notes" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Save Session' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Session Modal -->
+  <div *ngIf="showEditModal()" class="modal-overlay" (click)="closeEditModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Edit Session Timings</h2>
+        <button class="modal-close" (click)="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="updateSession()">
+          <div class="form-group">
+            <label>Branch *</label>
+            <select [(ngModel)]="newSession().branch_id" name="branch_id" required>
+              <option [value]="null">Select Branch</option>
+              <option *ngFor="let branch of branches()" [value]="branch.id">{{ branch.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Group Number</label>
+            <input type="number" [(ngModel)]="newSessionGroup" name="group" min="1" placeholder="Enter group number (optional)">
+          </div>
+          <div class="form-group">
+            <label>Day of Week *</label>
+            <select [(ngModel)]="newSession().day_of_week" name="day_of_week" required>
+              <option *ngFor="let day of daysOfWeek" [value]="day">{{ day }}</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Time *</label>
+              <input type="time" [(ngModel)]="newSession().start_time" name="start_time" required>
+            </div>
+            <div class="form-group">
+              <label>End Time *</label>
+              <input type="time" [(ngModel)]="newSession().end_time" name="end_time" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" [(ngModel)]="newSession().start_date" name="start_date" (change)="onStartDateChange()">
+            </div>
+            <div class="form-group">
+              <label>End Date (Optional)</label>
+              <input type="date" [(ngModel)]="newSession().end_date" name="end_date">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Max Capacity</label>
+            <input type="number" [(ngModel)]="newSession().max_capacity" name="max_capacity" min="1" required>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea [(ngModel)]="newSession().notes" name="notes" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeEditModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Updating...' : 'Update Session' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

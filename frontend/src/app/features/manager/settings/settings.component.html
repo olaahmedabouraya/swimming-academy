@@ -1,0 +1,80 @@
+<div class="settings-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+    <aside class="sidebar">
+      <ul class="nav-menu">
+        <li><a routerLink="/manager" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a></li>
+        <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+        <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+        <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Attendance</a></li>
+        <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+        <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+        <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+        <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+        <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+        <li><a routerLink="/manager/settings" routerLinkActive="active">Settings</a></li>
+      </ul>
+    </aside>
+  
+  <main class="main-content fade-in">
+    <div class="header-actions">
+      <h1>System Settings</h1>
+    </div>
+
+    <div *ngIf="loading()" class="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div *ngIf="!loading()" class="settings-container">
+      <div class="settings-section">
+        <h2>Billing Period Configuration</h2>
+        <p class="settings-description">
+          Configure the billing/enrollment period dates. These dates will be applied to all players when they are created.
+          The period typically represents a month (e.g., January 1 - January 31).
+        </p>
+
+        <form (ngSubmit)="savePeriodDates()" class="settings-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Period Start Date *</label>
+              <input 
+                type="date" 
+                [(ngModel)]="periodStartDate" 
+                name="period_start_date" 
+                required
+              >
+              <small>The first day of the billing period</small>
+            </div>
+            <div class="form-group">
+              <label>Period End Date *</label>
+              <input 
+                type="date" 
+                [(ngModel)]="periodEndDate" 
+                name="period_end_date" 
+                required
+              >
+              <small>The last day of the billing period</small>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Save Period Dates' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+  </div>
+</div>
+

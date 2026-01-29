@@ -1,0 +1,78 @@
+<div class="revenue-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/manager" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a></li>
+            <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+            <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+            <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+            <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+            <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+            <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+            <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+            <li><a routerLink="/manager/settings" routerLinkActive="active">Settings</a></li>
+          </ul>
+        </aside>
+
+    <main class="main-content fade-in">
+      <h1>Revenue & Statistics</h1>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading()" class="revenue-stats">
+        <div class="stat-card large">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <h3>Total Revenue</h3>
+            <p class="stat-value">${{ statistics().total_revenue || 0 | number:'1.2-2' }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <h3>Total Enrollments</h3>
+            <p class="stat-value">{{ statistics().total_enrollments || 0 }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">📈</div>
+          <div class="stat-info">
+            <h3>Avg Selling Rate</h3>
+            <p class="stat-value">{{ statistics().average_selling_rate || 0 | number:'1.1-1' }}%</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">🏊</div>
+          <div class="stat-info">
+            <h3>Total Sessions</h3>
+            <p class="stat-value">{{ statistics().total_sessions || 0 }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <h3>Total Attendance</h3>
+            <p class="stat-value">{{ statistics().total_attendance || 0 }}</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

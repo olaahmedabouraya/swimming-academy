@@ -1,0 +1,135 @@
+<div class="attendance-calendar-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/manager" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a></li>
+            <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+            <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+            <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+            <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+            <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+            <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+            <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+            <li><a routerLink="/manager/settings" routerLinkActive="active">Settings</a></li>
+          </ul>
+        </aside>
+
+    <main class="main-content fade-in">
+      <div class="header-actions">
+        <h1>Mark Attendance</h1>
+        <button class="btn btn-secondary" (click)="toggleViewMode()">
+          {{ viewMode() === 'calendar' ? '📋 List View' : '📅 Calendar View' }}
+        </button>
+      </div>
+
+      <!-- Calendar View -->
+      <div *ngIf="viewMode() === 'calendar'" class="calendar-view-section">
+        <app-calendar
+          [selectedDate]="calendarSelectedDate()"
+          [events]="calendarEvents()"
+          (dateSelected)="onCalendarDateSelected($event)"
+        ></app-calendar>
+      </div>
+
+      <div class="calendar-filters">
+        <div class="filter-group">
+          <label>Select Date:</label>
+          <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" />
+        </div>
+        <div class="filter-group">
+          <label>Filter by Branch:</label>
+          <select [(ngModel)]="filterBranchId" (change)="onBranchFilterChange()">
+            <option [value]="null">All Branches</option>
+            <option *ngFor="let branch of branches()" [value]="branch.id">{{ branch.name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading() && sessions().length > 0" class="sessions-selector">
+        <h3>Select Session:</h3>
+        <div class="sessions-list">
+          <button 
+            *ngFor="let session of sessions()" 
+            class="session-btn"
+            [class.active]="selectedSession()?.id === session.id"
+            (click)="selectSession(session)">
+            <div class="session-btn-content">
+              <span class="day">{{ session.day_of_week }}</span>
+              <span class="time">{{ session.start_time }} - {{ session.end_time }}</span>
+              <span class="branch">{{ session.branch?.name }}</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && selectedSession() && players().length > 0" class="attendance-form">
+        <div class="form-header">
+          <h3>Mark Attendance for {{ selectedSession()?.day_of_week }} {{ selectedDate() | date:'shortDate' }}</h3>
+          <button class="btn btn-primary" (click)="saveAttendances()" [disabled]="saving()">
+            {{ saving() ? 'Saving...' : 'Save Attendance' }}
+          </button>
+        </div>
+
+        <div class="players-attendance-list">
+          <div *ngFor="let player of players()" class="player-attendance-item">
+            <div class="player-info">
+              <div class="player-avatar">{{ player.user?.name?.charAt(0) }}</div>
+              <div>
+                <h4>{{ player.user?.name }}</h4>
+                <p>{{ player.user?.email }}</p>
+              </div>
+            </div>
+            <div class="attendance-controls">
+              <select 
+                [value]="attendanceData().get(player.id)?.status || 'present'"
+                (change)="updateAttendanceStatus(player.id, $any($event.target).value)">
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+                <option value="late">Late</option>
+                <option value="excused">Excused</option>
+              </select>
+              <input 
+                type="time" 
+                placeholder="Check-in"
+                [value]="attendanceData().get(player.id)?.check_in_time || ''"
+                (change)="updateAttendanceTime(player.id, 'check_in_time', $any($event.target).value)">
+              <input 
+                type="time" 
+                placeholder="Check-out"
+                [value]="attendanceData().get(player.id)?.check_out_time || ''"
+                (change)="updateAttendanceTime(player.id, 'check_out_time', $any($event.target).value)">
+              <input 
+                type="text" 
+                placeholder="Notes"
+                [value]="attendanceData().get(player.id)?.notes || ''"
+                (change)="updateAttendanceNotes(player.id, $any($event.target).value)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && sessions().length === 0" class="empty-state">
+        <p>No sessions found for the selected date. Please configure sessions first.</p>
+      </div>
+
+      <div *ngIf="!loading() && selectedSession() && players().length === 0" class="empty-state">
+        <p>No players assigned to this session.</p>
+      </div>
+    </main>
+  </div>
+</div>

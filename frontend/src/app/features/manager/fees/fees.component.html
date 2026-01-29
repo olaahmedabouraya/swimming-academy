@@ -1,0 +1,249 @@
+<div class="fees-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/manager" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a></li>
+            <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+            <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+            <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+            <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+            <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+            <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+            <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+            <li><a routerLink="/manager/settings" routerLinkActive="active">Settings</a></li>
+          </ul>
+        </aside>
+
+    <main class="main-content fade-in">
+      <div class="header-actions">
+        <h1>Fee Management</h1>
+        <div class="action-buttons">
+          <button class="btn btn-primary" (click)="openAddModal()">+ Record Fee</button>
+          <button class="btn btn-success" (click)="openRenewalModal()">+ Renewal Fee</button>
+          <button class="btn btn-danger" (click)="openWithdrawalModal()">- Withdrawal</button>
+        </div>
+      </div>
+
+      <div class="revenue-section">
+        <h3>Revenue Summary</h3>
+        <div class="revenue-filters">
+          <div class="calendar-filter-section">
+            <app-calendar
+              [selectedDate]="null"
+              [events]="[]"
+              (dateSelected)="onRevenueCalendarDateSelected($event)"
+            ></app-calendar>
+          </div>
+          <div class="date-range-filters">
+            <div class="filter-group">
+              <label>From Date:</label>
+              <input type="date" [(ngModel)]="revenueStartDate" (change)="onRevenueDateChange()" />
+            </div>
+            <div class="filter-group">
+              <label>To Date:</label>
+              <input type="date" [(ngModel)]="revenueEndDate" (change)="onRevenueDateChange()" />
+            </div>
+            <div class="revenue-display">
+              <span class="revenue-label">Total Revenue:</span>
+              <span class="revenue-amount">${{ totalRevenue() | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading() && fees().length > 0" class="fees-list">
+        <div *ngFor="let fee of fees(); let i = index" class="fee-card slide-in" [style.animation-delay]="i * 0.05 + 's'">
+          <div class="fee-header">
+            <div>
+              <h3>{{ fee.player?.user?.name }}</h3>
+              <p class="fee-date">{{ fee.payment_date | date:'shortDate' }}</p>
+            </div>
+            <div class="fee-amount" [class.withdrawal]="fee.fee_type === 'withdrawal'">
+              <span *ngIf="fee.fee_type === 'withdrawal'">-</span>
+              <span *ngIf="fee.fee_type !== 'withdrawal'">+</span>
+              ${{ fee.amount | number:'1.2-2' }}
+            </div>
+          </div>
+          <div class="fee-details">
+            <div class="detail-item">
+              <span class="label">Type:</span>
+              <span class="value fee-type-badge" [class]="'type-' + fee.fee_type">{{ fee.fee_type }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Payment Method:</span>
+              <span class="value">{{ fee.payment_method }}</span>
+            </div>
+            <div class="detail-item" *ngIf="fee.reference_number">
+              <span class="label">Reference:</span>
+              <span class="value">{{ fee.reference_number }}</span>
+            </div>
+            <div class="detail-item" *ngIf="fee.notes">
+              <span class="label">Notes:</span>
+              <span class="value">{{ fee.notes }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-danger" (click)="deleteFee(fee.id!)">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && fees().length === 0" class="empty-state">
+        <p>No fees recorded yet.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Fee Modal -->
+  <div *ngIf="showAddModal()" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Record Fee</h2>
+        <button class="modal-close" (click)="closeAddModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="saveFee()">
+          <div class="form-group">
+            <label>Player *</label>
+            <select [(ngModel)]="newFee().player_id" name="player_id" required>
+              <option [value]="null">Select Player</option>
+              <option *ngFor="let player of players()" [value]="player.id">{{ player.user?.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fee Type *</label>
+            <select [(ngModel)]="newFee().fee_type" name="fee_type" required>
+              <option value="registration">Registration</option>
+              <option value="renewal">Renewal</option>
+              <option value="per_session">Per Session</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Amount *</label>
+            <input type="number" [(ngModel)]="newFee().amount" name="amount" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Payment Date *</label>
+            <input type="date" [(ngModel)]="newFee().payment_date" name="payment_date" required>
+          </div>
+          <div class="form-group">
+            <label>Payment Method *</label>
+            <select [(ngModel)]="newFee().payment_method" name="payment_method" required>
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="bank_transfer">Bank Transfer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Reference Number</label>
+            <input type="text" [(ngModel)]="newFee().reference_number" name="reference_number">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea [(ngModel)]="newFee().notes" name="notes" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Save Fee' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Withdrawal Modal -->
+  <div *ngIf="showWithdrawalModal()" class="modal-overlay" (click)="closeWithdrawalModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Record Withdrawal</h2>
+        <button class="modal-close" (click)="closeWithdrawalModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="saveWithdrawal()">
+          <div class="form-group">
+            <label>Player *</label>
+            <select [(ngModel)]="newFee().player_id" name="player_id" required>
+              <option [value]="null">Select Player</option>
+              <option *ngFor="let player of players()" [value]="player.id">{{ player.user?.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Withdrawal Amount *</label>
+            <input type="number" [(ngModel)]="newFee().amount" name="amount" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Payment Date *</label>
+            <input type="date" [(ngModel)]="newFee().payment_date" name="payment_date" required>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea [(ngModel)]="newFee().notes" name="notes" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeWithdrawalModal()">Cancel</button>
+            <button type="submit" class="btn btn-danger" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Record Withdrawal' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Renewal Modal -->
+  <div *ngIf="showRenewalModal()" class="modal-overlay" (click)="closeRenewalModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Create Renewal Fee (with Discounts)</h2>
+        <button class="modal-close" (click)="closeRenewalModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="saveRenewal()">
+          <div class="form-group">
+            <label>Player *</label>
+            <select [(ngModel)]="renewalData().player_id" name="player_id" required>
+              <option [value]="null">Select Player</option>
+              <option *ngFor="let player of players()" [value]="player.id">{{ player.user?.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Base Amount *</label>
+            <input type="number" [(ngModel)]="renewalData().base_amount" name="base_amount" step="0.01" min="0" required>
+            <small>Discounts for excused sessions and family discounts will be applied automatically</small>
+          </div>
+          <div class="form-group">
+            <label>Payment Date *</label>
+            <input type="date" [(ngModel)]="renewalData().payment_date" name="payment_date" required>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea [(ngModel)]="renewalData().notes" name="notes" rows="3"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeRenewalModal()">Cancel</button>
+            <button type="submit" class="btn btn-success" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Create Renewal' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

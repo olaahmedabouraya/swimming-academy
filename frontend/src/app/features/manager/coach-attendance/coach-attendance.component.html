@@ -1,0 +1,185 @@
+<div class="coach-attendance-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <app-logo></app-logo>
+      <div class="nav-actions">
+        <span class="user-name">{{ authService.currentUser()?.name }}</span>
+        <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+    <aside class="sidebar">
+      <ul class="nav-menu">
+        <li><a routerLink="/manager" routerLinkActive="active">Dashboard</a></li>
+        <li><a routerLink="/manager/players" routerLinkActive="active">Players</a></li>
+        <li><a routerLink="/manager/sessions" routerLinkActive="active">Sessions</a></li>
+        <li><a routerLink="/manager/attendance-calendar" routerLinkActive="active">Player Attendance</a></li>
+        <li><a routerLink="/manager/coach-attendance" routerLinkActive="active">Coach Attendance</a></li>
+        <li><a routerLink="/manager/coaches" routerLinkActive="active">Coaches</a></li>
+        <li><a routerLink="/manager/fees" routerLinkActive="active">Fees</a></li>
+        <li><a routerLink="/manager/branches" routerLinkActive="active">Branches</a></li>
+        <li><a routerLink="/manager/monthly-records" routerLinkActive="active">Monthly Records</a></li>
+        <li><a routerLink="/manager/revenue" routerLinkActive="active">Revenue</a></li>
+      </ul>
+    </aside>
+
+    <main class="main-content fade-in">
+      <div class="header-actions">
+        <h1>Coach Attendance</h1>
+        <button class="btn btn-primary" (click)="openAddModal()">+ Mark Attendance</button>
+      </div>
+
+      <div class="calendar-view-section">
+        <app-calendar
+          [selectedDate]="calendarSelectedDate()"
+          [events]="[]"
+          (dateSelected)="onCalendarDateSelected($event)"
+        ></app-calendar>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>Date:</label>
+          <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" />
+        </div>
+        <div class="filter-group">
+          <label>Filter by Coach:</label>
+          <select [(ngModel)]="filterCoachId" (change)="onFilterChange()">
+            <option [value]="null">All Coaches</option>
+            <option *ngFor="let coach of coaches()" [value]="coach.id">{{ coach.user?.name }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Filter by Session:</label>
+          <select [(ngModel)]="filterSessionId" (change)="onFilterChange()">
+            <option [value]="null">All Sessions</option>
+            <option *ngFor="let session of sessions()" [value]="session.id">
+              {{ session.day_of_week }} {{ session.start_time }} - {{ session.end_time }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="loading()" class="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading() && attendances().length > 0" class="attendances-list">
+        <div *ngFor="let attendance of attendances(); let i = index" class="attendance-card slide-in" [style.animation-delay]="i * 0.05 + 's'">
+          <div class="attendance-header">
+            <div>
+              <h3>{{ attendance.coach?.user?.name }}</h3>
+              <p>{{ attendance.session?.day_of_week }} - {{ attendance.attendance_date | date:'shortDate' }}</p>
+            </div>
+            <div class="attendance-status">
+              <span *ngIf="attendance.is_late" class="late-badge">Late: {{ attendance.late_minutes }} min</span>
+              <span class="hours-badge">{{ attendance.hours_worked || 0 }} hrs</span>
+            </div>
+          </div>
+          <div class="attendance-details">
+            <div class="detail-item">
+              <span class="label">Scheduled:</span>
+              <span>{{ attendance.scheduled_start_time }} - {{ attendance.scheduled_end_time }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Actual:</span>
+              <span>{{ attendance.actual_start_time || 'N/A' }} - {{ attendance.actual_end_time || 'N/A' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="attendance.notes">
+              <span class="label">Notes:</span>
+              <span>{{ attendance.notes }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-danger" (click)="deleteAttendance(attendance.id!)">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading() && attendances().length === 0" class="empty-state">
+        <p>No attendance records found for the selected date.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Attendance Modal -->
+  <div *ngIf="showAddModal()" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Mark Coach Attendance</h2>
+        <button class="modal-close" (click)="closeAddModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="saveAttendance()">
+          <div class="form-group">
+            <label>Coach *</label>
+            <select [(ngModel)]="newAttendance().coach_id" name="coach_id" required>
+              <option [value]="null">Select Coach</option>
+              <option *ngFor="let coach of coaches()" [value]="coach.id">{{ coach.user?.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Session *</label>
+            <select [(ngModel)]="newAttendance().session_id" name="session_id" (change)="onSessionSelected()" required>
+              <option [value]="null">Select Session</option>
+              <option *ngFor="let session of sessions()" [value]="session.id">
+                {{ session.day_of_week }} {{ session.start_time }} - {{ session.end_time }} ({{ session.branch?.name }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Attendance Date *</label>
+            <input type="date" [(ngModel)]="newAttendance().attendance_date" name="attendance_date" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Scheduled Start Time</label>
+              <input type="time" [(ngModel)]="newAttendance().scheduled_start_time" name="scheduled_start_time" readonly>
+            </div>
+            <div class="form-group">
+              <label>Scheduled End Time</label>
+              <input type="time" [(ngModel)]="newAttendance().scheduled_end_time" name="scheduled_end_time" readonly>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Actual Start Time *</label>
+              <input type="time" [(ngModel)]="newAttendance().actual_start_time" name="actual_start_time" (change)="calculateLateStatus()" required>
+            </div>
+            <div class="form-group">
+              <label>Actual End Time *</label>
+              <input type="time" [(ngModel)]="newAttendance().actual_end_time" name="actual_end_time" (change)="calculateHoursWorked()" required>
+            </div>
+          </div>
+          <div class="form-group" *ngIf="newAttendance().is_late">
+            <div class="late-warning">
+              <span>⚠️ Coach was {{ newAttendance().late_minutes }} minutes late</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Hours Worked</label>
+            <input type="number" [(ngModel)]="newAttendance().hours_worked" name="hours_worked" step="0.01" readonly>
+          </div>
+          <div class="form-group">
+            <label>Late Entry Notes</label>
+            <textarea 
+              [(ngModel)]="newAttendance().notes" 
+              name="notes" 
+              rows="4" 
+              placeholder="Enter notes about late entry, pool entry time, or any other observations..."
+            ></textarea>
+            <small *ngIf="newAttendance().is_late">Please note why the coach was late and when they entered the pool.</small>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : 'Save Attendance' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

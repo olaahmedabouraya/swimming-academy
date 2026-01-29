@@ -1,0 +1,56 @@
+<div class="schedule-container">
+      <nav class="navbar">
+        <div class="nav-content">
+          <app-logo></app-logo>
+          <div class="nav-actions">
+            <span class="user-name">{{ authService.currentUser()?.name }}</span>
+            <button class="btn btn-secondary" (click)="authService.logout()">Logout</button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="dashboard-content">
+        <aside class="sidebar">
+          <ul class="nav-menu">
+            <li><a routerLink="/player" routerLinkActive="active">Dashboard</a></li>
+            <li><a routerLink="/player/profile" routerLinkActive="active">My Profile</a></li>
+            <li><a routerLink="/player/schedule" routerLinkActive="active">Schedule</a></li>
+            <li><a routerLink="/player/attendance" routerLinkActive="active">Attendance</a></li>
+            <li><a routerLink="/player/ratings" routerLinkActive="active">Ratings</a></li>
+          </ul>
+        </aside>
+
+        <main class="main-content fade-in">
+          <h1>My Schedule</h1>
+
+          <div *ngIf="loading()" class="loading">
+            <div class="spinner"></div>
+          </div>
+
+          <div *ngIf="!loading() && schedules().length > 0" class="schedule-grid">
+            <div *ngFor="let schedule of schedules(); let i = index" class="schedule-card slide-in" [style.animation-delay]="i * 0.1 + 's'">
+              <div class="schedule-day">{{ schedule.day_of_week }}</div>
+              <div class="schedule-time">
+                <span class="time-icon">⏰</span>
+                {{ schedule.start_time }} - {{ schedule.end_time }}
+              </div>
+              <div class="schedule-branch">
+                <span class="branch-icon">📍</span>
+                {{ schedule.branch?.name }}
+              </div>
+              <div *ngIf="schedule.instructor_name" class="schedule-instructor">
+                <span class="instructor-icon">👨‍🏫</span>
+                {{ schedule.instructor_name }}
+              </div>
+              <div *ngIf="schedule.notes" class="schedule-notes">
+                {{ schedule.notes }}
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!loading() && schedules().length === 0" class="empty-state">
+            <p>No schedules found. Please contact your branch manager.</p>
+          </div>
+        </main>
+      </div>
+    </div>
