@@ -174,3 +174,4 @@ Your app is now live on **100% free hosting**!
 
 **Need help?** Check Render logs and ensure all environment variables are set correctly.
 
+

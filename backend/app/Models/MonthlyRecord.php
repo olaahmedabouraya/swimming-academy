@@ -40,3 +40,4 @@ class MonthlyRecord extends Model
 }
 
 
+

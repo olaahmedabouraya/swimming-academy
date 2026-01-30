@@ -103,3 +103,4 @@ Here are **100% FREE** alternatives to Railway for hosting your Laravel backend:
 
 I'll update the deployment files to support Render as the default free option. The setup is almost identical to Railway!
 
+

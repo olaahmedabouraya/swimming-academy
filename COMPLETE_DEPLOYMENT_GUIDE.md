@@ -7,7 +7,7 @@
 ## 📋 What You'll Deploy
 
 - **Frontend (Angular)**: Vercel - FREE
-- **Backend (Laravel)**: Render - FREE (750 hours/month)
+- **Backend (Laravel)**: Koyeb - FREE (no verification) OR Fly.io/Render (may require verification)
 - **Database (PostgreSQL)**: Supabase - FREE (500MB)
 
 **Total Cost: $0/month** 🎉
@@ -78,7 +78,28 @@ git push -u origin main
 
 ---
 
-## ⚙️ Step 3: Deploy Backend to Render (5 minutes)
+## ⚙️ Step 3: Deploy Backend - Choose Your Option
+
+**All major platforms now require credit card verification. Here are your options:**
+
+### Option A: Use InfinityFree (Truly Free, No Card)
+- ✅ Completely free, no card needed
+- ✅ PHP 8.x support
+- ⚠️ Basic shared hosting (slower, limitations)
+- See `DEPLOYMENT_INFINITYFREE.md` for instructions
+
+### Option B: Add Card for Verification (Recommended)
+- Railway/Render/Koyeb only verify, don't charge
+- Much better experience
+- $5 free credit/month (Railway) or 750 hours/month (Render)
+- See original instructions below
+
+### Option C: Self-Host
+- Use your own server/VPS
+- Complete control
+- Free if you have hardware
+
+**Recommendation:** If possible, add a card just for verification (they won't charge). Otherwise, use 000webhost for truly free hosting.
 
 ### 3.1 Create Render Account
 

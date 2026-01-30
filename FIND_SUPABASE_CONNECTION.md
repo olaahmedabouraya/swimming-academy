@@ -62,3 +62,4 @@ Look for any of these on the Database Settings page:
 
 The connection details are definitely there, just might be in a different section!
 
+
