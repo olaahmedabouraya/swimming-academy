@@ -146,9 +146,71 @@ export class ApiService {
             }
           }
           
+          // Strategy 5: Look for JSON at the very beginning (before HTML)
+          const beforeHtml = responseText.split(/<html|<!doctype/i)[0];
+          if (beforeHtml.trim()) {
+            const jsonMatch = beforeHtml.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                const jsonData = JSON.parse(jsonMatch[0]);
+                if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) {
+                  console.log('✅ Extracted JSON from before HTML');
+                  return jsonData as T;
+                }
+              } catch (e) {
+                // Continue
+              }
+            }
+          }
+          
+          // Strategy 6: Look for JSON at the very end (after HTML)
+          const afterHtml = responseText.split(/<\/html>/i).pop();
+          if (afterHtml && afterHtml.trim()) {
+            const jsonMatch = afterHtml.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                const jsonData = JSON.parse(jsonMatch[0]);
+                if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) {
+                  console.log('✅ Extracted JSON from after HTML');
+                  return jsonData as T;
+                }
+              } catch (e) {
+                // Continue
+              }
+            }
+          }
+          
+          // Strategy 7: Try to find balanced JSON by counting braces
+          // Find the first { and then find the matching }
+          let braceCount = 0;
+          let jsonStart = -1;
+          for (let i = 0; i < responseText.length; i++) {
+            if (responseText[i] === '{') {
+              if (braceCount === 0) jsonStart = i;
+              braceCount++;
+            } else if (responseText[i] === '}') {
+              braceCount--;
+              if (braceCount === 0 && jsonStart !== -1) {
+                const potentialJson = responseText.substring(jsonStart, i + 1);
+                try {
+                  const jsonData = JSON.parse(potentialJson);
+                  if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) {
+                    console.log('✅ Extracted JSON using brace matching');
+                    return jsonData as T;
+                  }
+                } catch (e) {
+                  // Continue searching
+                }
+                jsonStart = -1;
+              }
+            }
+          }
+          
           // If we can't extract JSON, log the full response for debugging
           console.error('❌ Could not extract JSON from HTML response');
-          console.error('Full response (first 2000 chars):', responseText.substring(0, 2000));
+          console.error('Response length:', responseText.length);
+          console.error('First 1000 chars:', responseText.substring(0, 1000));
+          console.error('Last 1000 chars:', responseText.substring(Math.max(0, responseText.length - 1000)));
           throw new Error('Hosting service is injecting ads into API responses. The response was modified and could not be parsed.');
         }
         
