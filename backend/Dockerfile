@@ -36,8 +36,14 @@ RUN mkdir -p /var/www/html/storage/framework/{sessions,views,cache} \
 RUN chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
+# Entrypoint: run migrations at startup, then run the main command
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
+
 # Expose port (Render will set $PORT)
 EXPOSE $PORT
 
 # Start Laravel using artisan serve
+# Shell form so $PORT is expanded at runtime (e.g. Render sets PORT)
 CMD php artisan serve --host=0.0.0.0 --port=$PORT
