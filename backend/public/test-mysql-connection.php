@@ -50,15 +50,62 @@ $testConfigs = [
     ['host' => 'localhost', 'port' => null, 'socket' => '/var/lib/mysql/mysql.sock'],
 ];
 
-// Also try common InfinityFree MySQL hosts
+// Extract account number from username (if0_41026765 -> 41026765)
+$accountNumber = preg_replace('/^if0_/', '', $dbUsername);
+
+// Common InfinityFree MySQL host patterns
 $infinityFreeHosts = [
-    'sqlXXX.infinityfree.com', // Replace XXX with your account number if known
-    'mysqlXXX.infinityfree.com',
+    'sql' . $accountNumber . '.infinityfree.com',
+    'mysql' . $accountNumber . '.infinityfree.com',
+    'sql' . $accountNumber . '.epizy.com',
+    'sql' . $accountNumber . '.ifastnet.com',
 ];
 
 echo "=== Testing MySQL Connections ===\n\n";
 
+// First, try connecting without a database to test credentials
+echo "=== Testing Connection Without Database (to verify credentials) ===\n";
+$testHosts = array_merge(['localhost', '127.0.0.1'], $infinityFreeHosts);
+
+foreach ($testHosts as $testHost) {
+    echo "Testing host: $testHost (no database)\n";
+    try {
+        $dsn = "mysql:host=$testHost;port=3306";
+        $pdo = new PDO($dsn, $dbUsername, $dbPassword, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 5
+        ]);
+        
+        echo "✅ Connection successful to $testHost!\n";
+        echo "   Credentials are correct!\n";
+        
+        // List available databases
+        $stmt = $pdo->query("SHOW DATABASES");
+        $databases = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        echo "   Available databases: " . implode(', ', $databases) . "\n";
+        
+        if (in_array($dbDatabase, $databases)) {
+            echo "   ✅ Database '$dbDatabase' exists!\n";
+        } else {
+            echo "   ⚠️  Database '$dbDatabase' does NOT exist!\n";
+            echo "   You may need to create it in InfinityFree Control Panel.\n";
+        }
+        
+        break;
+    } catch (PDOException $e) {
+        echo "   ❌ Failed: " . $e->getMessage() . "\n";
+    }
+    echo "\n";
+}
+
+echo "\n=== Testing MySQL Connections with Database ===\n\n";
+
 $successful = false;
+
+// Add InfinityFree hosts to test configs
+foreach ($infinityFreeHosts as $host) {
+    $testConfigs[] = ['host' => $host, 'port' => 3306, 'socket' => null];
+}
 
 foreach ($testConfigs as $config) {
     echo "Testing: ";
