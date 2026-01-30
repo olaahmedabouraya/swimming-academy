@@ -12,7 +12,15 @@ bootstrapApplication(AppComponent, {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations()
   ]
-}).catch(err => console.error(err));
+}).catch(err => {
+  console.error('Error bootstrapping application:', err);
+  // Show error message in the DOM
+  const errorDiv = document.createElement('div');
+  errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #e74c3c; color: white; padding: 20px; text-align: center; z-index: 10000;';
+  errorDiv.innerHTML = '<h2>Application Error</h2><p>Failed to load the application. Please check the console for details.</p>';
+  document.body.appendChild(errorDiv);
+  throw err;
+});
 
 
 
