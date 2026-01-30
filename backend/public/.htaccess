@@ -27,4 +27,3 @@
         Header set Content-Type "application/json"
     </FilesMatch>
 </IfModule>
-

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -42,186 +42,27 @@ export class ApiService {
     console.log('POST request to:', url);
     console.log('Request body:', body);
     
-    // Use text response type to handle InfinityFree ad injection
-    return this.http.post(url, body, {
+    const postOpts = {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
       },
-      responseType: 'text'
-    }).pipe(
-      map((responseText: string) => {
-        // Check if response is HTML (InfinityFree ad injection)
-        if (responseText.includes('<!doctype html>') || 
-            responseText.includes('<html>') || 
-            responseText.includes('aes.js') ||
-            responseText.includes('This site requires Javascript')) {
-          
-          console.error('❌ InfinityFree is injecting HTML/ads into API response!');
-          console.error('Response length:', responseText.length);
-          console.error('First 500 chars:', responseText.substring(0, 500));
-          console.error('Attempting to extract JSON from HTML response...');
-          
-          // Strategy 1: Look for JSON in script tags
-          const scriptMatches = responseText.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
-          if (scriptMatches) {
-            for (const script of scriptMatches) {
-              const jsonMatch = script.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                try {
-                  const jsonData = JSON.parse(jsonMatch[0]);
-                  if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors) {
-                    console.log('✅ Extracted JSON from script tag');
-                    return jsonData as T;
-                  }
-                } catch (e) {
-                  // Continue
-                }
-              }
-            }
-          }
-          
-          // Strategy 2: Look for JSON objects with common API response keys
-          // Try to find JSON that starts with { and contains common API fields
-          const jsonPatterns = [
-            /\{"message"[\s\S]*?\}/,
-            /\{"user"[\s\S]*?\}/,
-            /\{"token"[\s\S]*?\}/,
-            /\{"errors"[\s\S]*?\}/,
-            /\{"data"[\s\S]*?\}/
-          ];
-          
-          for (const pattern of jsonPatterns) {
-            const match = responseText.match(pattern);
-            if (match) {
-              try {
-                const jsonData = JSON.parse(match[0]);
-                if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) {
-                  console.log('✅ Extracted JSON using pattern matching');
-                  return jsonData as T;
-                }
-              } catch (e) {
-                // Continue
-              }
-            }
-          }
-          
-          // Strategy 3: Find all JSON-like objects and try them
-          // Use a more sophisticated regex that handles nested objects
-          const jsonRegex = /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/g;
-          const allMatches = responseText.match(jsonRegex);
-          if (allMatches) {
-            // Sort by length (longer is more likely to be the actual response)
-            const sortedMatches = allMatches.sort((a, b) => b.length - a.length);
-            for (const match of sortedMatches) {
-              try {
-                const jsonData = JSON.parse(match);
-                // Check if it looks like our API response
-                if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) {
-                  console.log('✅ Extracted JSON from nested object search');
-                  return jsonData as T;
-                }
-              } catch (e) {
-                // Continue
-              }
-            }
-          }
-          
-          // Strategy 4: Try to find JSON between HTML tags (in body, div, etc.)
-          const bodyMatch = responseText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-          if (bodyMatch) {
-            const bodyContent = bodyMatch[1];
-            const bodyJsonMatch = bodyContent.match(/\{[\s\S]{20,}\}/);
-            if (bodyJsonMatch) {
-              try {
-                const jsonData = JSON.parse(bodyJsonMatch[0]);
-                if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors) {
-                  console.log('✅ Extracted JSON from body content');
-                  return jsonData as T;
-                }
-              } catch (e) {
-                // Continue
-              }
-            }
-          }
-          
-          // Strategy 5: Look for JSON at the very beginning (before HTML)
-          const beforeHtml = responseText.split(/<html|<!doctype/i)[0];
-          if (beforeHtml.trim()) {
-            const jsonMatch = beforeHtml.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              try {
-                const jsonData = JSON.parse(jsonMatch[0]);
-                if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) {
-                  console.log('✅ Extracted JSON from before HTML');
-                  return jsonData as T;
-                }
-              } catch (e) {
-                // Continue
-              }
-            }
-          }
-          
-          // Strategy 6: Look for JSON at the very end (after HTML)
-          const afterHtml = responseText.split(/<\/html>/i).pop();
-          if (afterHtml && afterHtml.trim()) {
-            const jsonMatch = afterHtml.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              try {
-                const jsonData = JSON.parse(jsonMatch[0]);
-                if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) {
-                  console.log('✅ Extracted JSON from after HTML');
-                  return jsonData as T;
-                }
-              } catch (e) {
-                // Continue
-              }
-            }
-          }
-          
-          // Strategy 7: Try to find balanced JSON by counting braces
-          // Find the first { and then find the matching }
-          let braceCount = 0;
-          let jsonStart = -1;
-          for (let i = 0; i < responseText.length; i++) {
-            if (responseText[i] === '{') {
-              if (braceCount === 0) jsonStart = i;
-              braceCount++;
-            } else if (responseText[i] === '}') {
-              braceCount--;
-              if (braceCount === 0 && jsonStart !== -1) {
-                const potentialJson = responseText.substring(jsonStart, i + 1);
-                try {
-                  const jsonData = JSON.parse(potentialJson);
-                  if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) {
-                    console.log('✅ Extracted JSON using brace matching');
-                    return jsonData as T;
-                  }
-                } catch (e) {
-                  // Continue searching
-                }
-                jsonStart = -1;
-              }
-            }
-          }
-          
-          // If we can't extract JSON, log the full response for debugging
-          console.error('❌ Could not extract JSON from HTML response');
-          console.error('Response length:', responseText.length);
-          console.error('First 1000 chars:', responseText.substring(0, 1000));
-          console.error('Last 1000 chars:', responseText.substring(Math.max(0, responseText.length - 1000)));
-          throw new Error('Hosting service is injecting ads into API responses. The response was modified and could not be parsed.');
+      responseType: 'text' as const
+    };
+    return this.http.post(url, body, postOpts).pipe(
+      switchMap((responseText: string) => {
+        const isAdHtml = responseText.includes('<!doctype html>') ||
+          responseText.includes('<html>') || responseText.includes('aes.js') ||
+          responseText.includes('This site requires Javascript');
+        if (isAdHtml && !url.includes('i=1')) {
+          const retryUrl = url + (url.includes('?') ? '&i=1' : '?i=1');
+          console.warn('Host injected HTML; retrying POST with', retryUrl);
+          return this.http.post(retryUrl, body, postOpts).pipe(
+            map((retryText: string) => this.parsePostResponseText<T>(retryText))
+          );
         }
-        
-        // Try to parse as JSON (normal case)
-        try {
-          return JSON.parse(responseText) as T;
-        } catch (e) {
-          console.error('Failed to parse response as JSON');
-          console.error('Response (first 500 chars):', responseText.substring(0, 500));
-          throw new Error('Invalid JSON response from server');
-        }
+        return of(this.parsePostResponseText<T>(responseText));
       }),
       catchError((error: any) => {
         console.error('API Error Details:', {
@@ -240,6 +81,97 @@ export class ApiService {
         throw error;
       })
     );
+  }
+
+  private parsePostResponseText<T>(responseText: string): T {
+    const isAdHtml = responseText.includes('<!doctype html>') ||
+      responseText.includes('<html>') || responseText.includes('aes.js') ||
+      responseText.includes('This site requires Javascript');
+    if (isAdHtml) {
+      console.error('❌ Host is injecting HTML/ads into API response!');
+      const scriptMatches = responseText.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+      if (scriptMatches) {
+        for (const script of scriptMatches) {
+          const jsonMatch = script.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              const jsonData = JSON.parse(jsonMatch[0]);
+              if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors) return jsonData as T;
+            } catch (e) { /* continue */ }
+          }
+        }
+      }
+      const jsonPatterns = [/\{"message"[\s\S]*?\}/, /\{"user"[\s\S]*?\}/, /\{"token"[\s\S]*?\}/, /\{"errors"[\s\S]*?\}/, /\{"data"[\s\S]*?\}/];
+      for (const pattern of jsonPatterns) {
+        const match = responseText.match(pattern);
+        if (match) {
+          try {
+            const jsonData = JSON.parse(match[0]);
+            if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) return jsonData as T;
+          } catch (e) { /* continue */ }
+        }
+      }
+      const jsonRegex = /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/g;
+      const allMatches = responseText.match(jsonRegex);
+      if (allMatches) {
+        for (const match of allMatches.sort((a, b) => b.length - a.length)) {
+          try {
+            const jsonData = JSON.parse(match);
+            if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) return jsonData as T;
+          } catch (e) { /* continue */ }
+        }
+      }
+      const bodyMatch = responseText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) {
+        const bodyJsonMatch = bodyMatch[1].match(/\{[\s\S]{20,}\}/);
+        if (bodyJsonMatch) {
+          try {
+            const jsonData = JSON.parse(bodyJsonMatch[0]);
+            if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors) return jsonData as T;
+          } catch (e) { /* continue */ }
+        }
+      }
+      const beforeHtml = responseText.split(/<html|<!doctype/i)[0];
+      if (beforeHtml.trim()) {
+        const jsonMatch = beforeHtml.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const jsonData = JSON.parse(jsonMatch[0]);
+            if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) return jsonData as T;
+          } catch (e) { /* continue */ }
+        }
+      }
+      const afterHtml = responseText.split(/<\/html>/i).pop();
+      if (afterHtml?.trim()) {
+        const jsonMatch = afterHtml.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const jsonData = JSON.parse(jsonMatch[0]);
+            if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) return jsonData as T;
+          } catch (e) { /* continue */ }
+        }
+      }
+      let braceCount = 0, jsonStart = -1;
+      for (let i = 0; i < responseText.length; i++) {
+        if (responseText[i] === '{') { if (braceCount === 0) jsonStart = i; braceCount++; }
+        else if (responseText[i] === '}') {
+          braceCount--;
+          if (braceCount === 0 && jsonStart !== -1) {
+            try {
+              const jsonData = JSON.parse(responseText.substring(jsonStart, i + 1));
+              if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors || jsonData.data) return jsonData as T;
+            } catch (e) { /* continue */ }
+            jsonStart = -1;
+          }
+        }
+      }
+      throw new Error('Hosting service is injecting ads into API responses. Use a backend host that does not inject ads (e.g. Render, Fly.io). See DEPLOYMENT_RENDER.md for an ad-free backend host.');
+    }
+    try {
+      return JSON.parse(responseText) as T;
+    } catch (e) {
+      throw new Error('Invalid JSON response from server');
+    }
   }
 
   put<T>(endpoint: string, body: any): Observable<T> {
