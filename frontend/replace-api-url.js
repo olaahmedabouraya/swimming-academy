@@ -3,7 +3,17 @@ const fs = require('fs');
 const path = require('path');
 
 const envFile = path.join(__dirname, 'src', 'environments', 'environment.prod.ts');
-const apiUrl = process.env.API_URL || 'https://your-backend-url.onrender.com/api';
+let apiUrl = process.env.API_URL || 'https://swimming-academy.wuaze.com/api';
+
+// Ensure API URL ends with /api
+if (apiUrl && !apiUrl.endsWith('/api')) {
+  // Remove trailing slash if present
+  apiUrl = apiUrl.replace(/\/$/, '');
+  // Add /api if not present
+  if (!apiUrl.endsWith('/api')) {
+    apiUrl = `${apiUrl}/api`;
+  }
+}
 
 // Read the file
 let content = fs.readFileSync(envFile, 'utf8');
