@@ -41,9 +41,8 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Expose port (Render will set $PORT)
-EXPOSE $PORT
+# Render sets PORT at runtime (e.g. 10000)
+EXPOSE 10000
 
-# Start Laravel using artisan serve
-# Shell form so $PORT is expanded at runtime (e.g. Render sets PORT)
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
+# Fallback if entrypoint is overridden; entrypoint normally starts the server with $PORT
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
