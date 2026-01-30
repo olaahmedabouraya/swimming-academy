@@ -1,6 +1,12 @@
 # 🚀 Deploy to 000webhost (Completely Free, No Card)
 
-## ✅ Why 000webhost?
+## ⛔ 000webhost has closed (2024)
+
+**000webhost was shut down by Hostinger in 2024.** New signups stopped in July 2024; the platform fully closed in October 2024. Hostinger does not offer free web hosting, so this guide is kept for reference only. For free backend hosting without a card, see **[BACKEND_NO_CARD_OPTIONS.md](BACKEND_NO_CARD_OPTIONS.md)** (e.g. self-host + ngrok, or use a virtual card for Render/Koyeb/Fly.io).
+
+---
+
+## ✅ Why 000webhost? (historical)
 
 - ✅ **Completely free**
 - ✅ **No credit card required**

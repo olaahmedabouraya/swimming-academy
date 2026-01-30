@@ -5,7 +5,7 @@
 **InfinityFree (and similar free hosts like wuaze) inject HTML/ads into every response.**  
 That breaks JSON APIs: your frontend will get HTML instead of JSON, so **registration, login, and other API calls will fail** with errors like *"Hosting service is injecting ads into API responses"*.
 
-- **For the backend API:** use a host that does not modify responses, e.g. **Render** or **Fly.io**. See **[DEPLOYMENT_RENDER.md](DEPLOYMENT_RENDER.md)**.
+- **For the backend API:** use a host that does not modify responses. **No credit card needed:** **[Koyeb](DEPLOYMENT_KOYEB.md)** or **[Fly.io](DEPLOYMENT_FLYIO.md)**. (Render requires a card.)
 - InfinityFree is still fine for **static sites** or **server-rendered pages** where HTML responses are expected.
 
 ---

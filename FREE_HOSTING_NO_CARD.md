@@ -37,7 +37,7 @@
 
 ---
 
-## ✅ Option 3: 000webhost / InfinityFree (Basic Free)
+## ✅ Option 3: InfinityFree (Basic Free — 000webhost closed 2024)
 
 **Free Tier:**
 - ✅ Unlimited hosting
@@ -45,8 +45,9 @@
 - ✅ MySQL database
 - ✅ No credit card
 - ⚠️ Limited features, slower
+- ⚠️ May inject ads into API responses (see REGISTRATION_API_ISSUE.md)
 
-**Note:** Less reliable, but completely free. Good for testing.
+**Note:** 000webhost was shut down by Hostinger in 2024. InfinityFree is the main no-card PHP option; less reliable, good for testing.
 
 ---
 

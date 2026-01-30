@@ -7,20 +7,21 @@ When the frontend (e.g. on Vercel) calls `POST /api/register`, it expects **JSON
 
 ## Reliable fix: move the backend off that host
 
-Use a backend host that **does not modify API responses**:
+Use a backend host that **does not modify API responses**. These **do not require a credit card**:
 
-1. **Render** (free tier, no card) – recommended  
-   - Follow **[DEPLOYMENT_RENDER.md](DEPLOYMENT_RENDER.md)**  
-   - Deploy the Laravel backend to Render, then set the **API URL** in Vercel to your Render backend URL (e.g. `https://swimming-academy-api.onrender.com`).
+1. **Koyeb** (no card, no verification – GitHub signup only) – recommended  
+   - Follow **[DEPLOYMENT_KOYEB.md](DEPLOYMENT_KOYEB.md)**  
+   - Deploy the Laravel backend to Koyeb, then set the **API URL** in Vercel to your Koyeb backend URL (e.g. `https://swimming-academy-api-xxxxx.koyeb.app`).
 
-2. **Fly.io** or **Koyeb**  
-   - See **[DEPLOYMENT_FLYIO.md](DEPLOYMENT_FLYIO.md)** and **[DEPLOYMENT_KOYEB.md](DEPLOYMENT_KOYEB.md)**.
+2. **Fly.io** (no card required)  
+   - Follow **[DEPLOYMENT_FLYIO.md](DEPLOYMENT_FLYIO.md)**  
+   - Deploy with Fly CLI, then set **API URL** in Vercel to your Fly URL (e.g. `https://swimming-academy-api.fly.dev`).
 
-After the backend is on Render (or similar), **registration and login will work** because the API will return plain JSON.
+**Note:** Render, Koyeb, and Fly.io may all require a credit card for signup/verification (they usually don’t charge on the free tier). If you **cannot add a card at all**, see **[BACKEND_NO_CARD_OPTIONS.md](BACKEND_NO_CARD_OPTIONS.md)** for options (e.g. self-host + ngrok, or using a virtual/prepaid card only for verification).
 
 ## What we did in the app
 
 - The frontend **retries** POST requests once with `?i=1` when it detects injected HTML (some hosts return clean JSON on that).
 - If the host **always** injects (like InfinityFree/wuaze), that retry still returns HTML, so **registration will still fail** until you move the backend.
 
-**Summary:** Point your frontend’s API URL to a backend on **Render** (or another ad-free host) and redeploy; then registration will work.
+**Summary:** Point your frontend’s API URL to a backend on **Koyeb** or **Fly.io** (no card required) and redeploy; then registration will work.

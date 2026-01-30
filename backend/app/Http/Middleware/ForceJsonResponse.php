@@ -29,7 +29,7 @@ class ForceJsonResponse
                 $response->headers->set('Content-Type', 'application/json');
             }
             
-            // Add headers to prevent caching and ad injection
+            // Security and cache headers
             $response->headers->set('X-Content-Type-Options', 'nosniff');
             $response->headers->set('X-Frame-Options', 'DENY');
             $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');

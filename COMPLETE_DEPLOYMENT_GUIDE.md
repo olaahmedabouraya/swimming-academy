@@ -99,7 +99,7 @@ git push -u origin main
 - Complete control
 - Free if you have hardware
 
-**Recommendation:** If possible, add a card just for verification (they won't charge). Otherwise, use 000webhost for truly free hosting.
+**Recommendation:** If possible, add a card just for verification (they won't charge). Otherwise, see BACKEND_NO_CARD_OPTIONS.md (000webhost closed in 2024).
 
 ### 3.1 Create Render Account
 

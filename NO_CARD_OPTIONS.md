@@ -1,25 +1,8 @@
 # 🆓 Free Hosting - No Credit Card Required
 
-## ✅ Option 1: 000webhost (Completely Free, No Card)
+## ⛔ Option 1: 000webhost — closed (2024)
 
-**Free Tier:**
-- ✅ Unlimited hosting
-- ✅ PHP 8.x support
-- ✅ MySQL database included
-- ✅ **No credit card**
-- ✅ **No verification**
-- ⚠️ Less reliable, slower
-- ⚠️ Limited features
-- ⚠️ Ads on free tier (can be removed)
-
-**Setup:**
-1. Go to [000webhost.com](https://000webhost.com)
-2. Sign up (no card needed)
-3. Create website
-4. Upload your Laravel backend via FTP
-5. Configure database
-
-**Good for:** Testing, small projects, when you need truly free
+**000webhost was shut down by Hostinger in 2024.** New signups stopped July 2024; platform closed October 2024. Hostinger does not offer free web hosting. See **[BACKEND_NO_CARD_OPTIONS.md](BACKEND_NO_CARD_OPTIONS.md)** for current no-card options.
 
 ---
 
@@ -85,10 +68,11 @@ You can host it yourself for free!
 
 ### If You Need Truly Free (No Card):
 
-**Use 000webhost or InfinityFree:**
+**Use InfinityFree** (000webhost closed in 2024):
 - Basic but works
 - No verification needed
 - Good for testing/small projects
+- ⚠️ May inject ads into API responses (see REGISTRATION_API_ISSUE.md)
 
 ### If You're Willing to Add Card (Just Verification):
 
@@ -100,9 +84,9 @@ You can host it yourself for free!
 
 ---
 
-## 📝 Quick Setup: 000webhost
+## 📝 Quick Setup: InfinityFree (000webhost closed)
 
-1. Go to [000webhost.com](https://000webhost.com)
+1. Go to [infinityfree.net](https://infinityfree.net)
 2. Sign up (no card)
 3. Create website
 4. Get FTP credentials

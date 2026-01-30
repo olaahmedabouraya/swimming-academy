@@ -19,7 +19,7 @@
 
 ---
 
-## ✅ Option 2: 000webhost / InfinityFree
+## ✅ Option 2: InfinityFree (000webhost closed 2024)
 
 **Free Tier:**
 - ✅ Completely free
@@ -28,8 +28,9 @@
 - ✅ **No verification**
 - ⚠️ Less reliable, slower
 - ⚠️ Limited features
+- ⚠️ May inject ads into API responses
 
-**Good for:** Testing, small projects
+**Good for:** Testing, small projects. (000webhost was shut down by Hostinger in 2024.)
 
 ---
 
