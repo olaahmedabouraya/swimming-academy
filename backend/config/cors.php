@@ -8,10 +8,12 @@ return [
 
     'allowed_origins' => [
         'http://localhost:4200',
-        env('FRONTEND_URL', 'https://your-frontend.vercel.app'),
+        env('FRONTEND_URL', 'https://swimming-academy-git-main-ola-ahmed-abou-rayas-projects.vercel.app'),
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https://swimming-academy.*\.vercel\.app$#',
+    ],
 
     'allowed_headers' => ['*'],
 
