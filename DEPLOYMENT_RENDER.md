@@ -45,9 +45,9 @@ Same as before - see `DEPLOYMENT.md` Step 1.
    - **Region**: Choose closest to you
    - **Branch**: `main`
    - **Root Directory**: (leave empty if backend is root)
-   - **Build Command**: `composer install --no-dev --optimize-autoloader`
+   - **Build Command**: `composer install --no-dev --optimize-autoloader && php artisan migrate --force`
    - **Start Command**: `php artisan serve --host=0.0.0.0 --port=$PORT`
-6. Click **"Advanced"** → Add Environment Variables:
+6. Click **"Advanced"** → Add Environment Variables (include **APP_KEY** — see 2.3 below):
 
 ```env
 APP_NAME=Olympia Academy
@@ -55,6 +55,7 @@ APP_ENV=production
 APP_DEBUG=false
 APP_TIMEZONE=UTC
 APP_URL=https://swimming-academy-api.onrender.com
+APP_KEY=base64:YOUR_KEY_HERE
 
 # Database (from Supabase)
 DB_CONNECTION=pgsql
@@ -78,23 +79,33 @@ SANCTUM_STATEFUL_DOMAINS=your-frontend.vercel.app
 7. Click **"Create Web Service"**
 8. Wait 5-10 minutes for first deployment
 
-### 2.3 Generate APP_KEY
+### 2.3 Generate APP_KEY (Free tier: no Shell)
 
-1. In Render dashboard, go to your service
-2. Click **"Shell"** tab
-3. Run: `php artisan key:generate`
-4. Copy the generated key
-5. Go to **"Environment"** tab → Add:
+**Free tier does not include Shell.** Generate the key **locally** and add it to Environment:
+
+1. On your machine, in the backend folder:
+   ```bash
+   cd backend
+   php artisan key:generate --show
+   ```
+2. Copy the output (e.g. `base64:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=`)
+3. In Render dashboard → your service → **Environment** tab
+4. Add (or edit):
    - Key: `APP_KEY`
    - Value: (paste the key you copied)
-6. Service will auto-redeploy
+5. Save. The service will auto-redeploy.
 
-### 2.4 Run Migrations
-
-1. In Render Shell, run:
+**If you don’t have PHP locally**, you can generate a key with:
    ```bash
-   php artisan migrate --force
+   openssl rand -base64 32
    ```
+   Then set `APP_KEY=base64:PASTE_THE_OUTPUT_HERE` (include the `base64:` prefix).
+
+### 2.4 Migrations (Free tier)
+
+Migrations run automatically during **Build** (see Build Command in 2.2). You don’t need Shell.
+
+If you need to run migrations later without redeploying, you’d need the paid Shell; on free tier, trigger a redeploy to run migrations again.
 
 ### 2.5 Get Backend URL
 
