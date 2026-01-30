@@ -39,11 +39,18 @@ try {
     print_r($testData);
     echo "\n";
     
-    // Create request
-    $request = Illuminate\Http\Request::create('/api/register', 'POST', $testData, [], [], [
-        'HTTP_ACCEPT' => 'application/json',
-        'CONTENT_TYPE' => 'application/json'
-    ]);
+    // Create request - for JSON, data should be in request body, not POST array
+    $request = Illuminate\Http\Request::create(
+        '/api/register', 
+        'POST', 
+        $testData, // This goes to $request->all() which works for FormRequest
+        [], 
+        [], 
+        [
+            'HTTP_ACCEPT' => 'application/json',
+            'CONTENT_TYPE' => 'application/json'
+        ]
+    );
     
     $request->headers->set('Accept', 'application/json');
     $request->headers->set('Content-Type', 'application/json');
