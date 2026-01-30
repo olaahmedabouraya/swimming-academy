@@ -12,6 +12,7 @@ use App\Http\Controllers\CoachController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\CoachAttendanceController;
 use App\Http\Controllers\ExcusedSessionController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
