@@ -40,6 +40,7 @@ export class ApiService {
   post<T>(endpoint: string, body: any): Observable<T> {
     const url = `${this.apiUrl}${endpoint}`;
     console.log('POST request to:', url);
+    console.log('Request body:', body);
     return this.http.post<T>(url, body, {
       headers: {
         'Content-Type': 'application/json',
@@ -49,12 +50,39 @@ export class ApiService {
     }).pipe(
       // Add error handling to detect HTML responses
       catchError((error: any) => {
-        if (error.error && typeof error.error === 'string' && error.error.includes('<!doctype html>')) {
-          console.error('❌ Received HTML instead of JSON. API URL might be wrong:', url);
-          console.error('Current API URL:', this.apiUrl);
-          console.error('Please check Vercel environment variable API_URL');
-          throw new Error('API returned HTML instead of JSON. Check API_URL configuration.');
+        console.error('API Error Details:', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url || url,
+          error: error.error
+        });
+        
+        // Check if response is HTML
+        if (error.error) {
+          const errorStr = typeof error.error === 'string' ? error.error : JSON.stringify(error.error);
+          if (errorStr.includes('<!doctype html>') || errorStr.includes('This site requires Javascript')) {
+            console.error('❌ Received HTML instead of JSON!');
+            console.error('Request URL:', url);
+            console.error('Current API URL:', this.apiUrl);
+            console.error('Error response:', errorStr.substring(0, 500));
+            console.error('Possible causes:');
+            console.error('  1. API_URL in Vercel is wrong');
+            console.error('  2. CORS issue - backend not allowing frontend domain');
+            console.error('  3. Request is hitting frontend instead of backend');
+            throw new Error('API returned HTML instead of JSON. Check API_URL and CORS configuration.');
+          }
         }
+        
+        // Check for CORS errors
+        if (error.status === 0 || error.statusText === 'Unknown Error') {
+          console.error('❌ CORS Error or Network Error!');
+          console.error('Request URL:', url);
+          console.error('This usually means:');
+          console.error('  1. CORS not configured on backend');
+          console.error('  2. Backend is down');
+          console.error('  3. Network connectivity issue');
+        }
+        
         throw error;
       })
     );
