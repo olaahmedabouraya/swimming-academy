@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -12,7 +13,17 @@ export class ApiService {
     ? (window as any).__API_URL__ 
     : environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    // Log API URL in development to help debug
+    if (!environment.production) {
+      console.log('API URL:', this.apiUrl);
+    }
+    // Warn if using placeholder URL
+    if (this.apiUrl.includes('your-backend-url')) {
+      console.error('⚠️ API URL is not configured! Using placeholder:', this.apiUrl);
+      console.error('Please set API_URL environment variable in Vercel');
+    }
+  }
 
   get<T>(endpoint: string, params?: Record<string, any>): Observable<T> {
     let httpParams = new HttpParams();
@@ -27,12 +38,26 @@ export class ApiService {
   }
 
   post<T>(endpoint: string, body: any): Observable<T> {
-    return this.http.post<T>(`${this.apiUrl}${endpoint}`, body, {
+    const url = `${this.apiUrl}${endpoint}`;
+    console.log('POST request to:', url);
+    return this.http.post<T>(url, body, {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
-    });
+      },
+      responseType: 'json' as 'json'
+    }).pipe(
+      // Add error handling to detect HTML responses
+      catchError((error: any) => {
+        if (error.error && typeof error.error === 'string' && error.error.includes('<!doctype html>')) {
+          console.error('❌ Received HTML instead of JSON. API URL might be wrong:', url);
+          console.error('Current API URL:', this.apiUrl);
+          console.error('Please check Vercel environment variable API_URL');
+          throw new Error('API returned HTML instead of JSON. Check API_URL configuration.');
+        }
+        throw error;
+      })
+    );
   }
 
   put<T>(endpoint: string, body: any): Observable<T> {
