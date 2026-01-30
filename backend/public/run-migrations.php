@@ -44,6 +44,24 @@ try {
         exit;
     }
     
+    echo "\n=== Setting up migrations table ===\n";
+    // Create migrations table if it doesn't exist
+    try {
+        \Illuminate\Support\Facades\Schema::hasTable('migrations');
+    } catch (Exception $e) {
+        // Table doesn't exist, create it
+    }
+    
+    // Use the migration repository to install the table
+    $repository = $app->make('migration.repository');
+    if (!$repository->repositoryExists()) {
+        echo "Creating migrations table...\n";
+        $repository->createRepository();
+        echo "✅ Migrations table created\n";
+    } else {
+        echo "✅ Migrations table already exists\n";
+    }
+    
     echo "\n=== Running Migrations ===\n";
     $migrator = $app->make('migrator');
     $migrator->run([$basePath . '/database/migrations']);
