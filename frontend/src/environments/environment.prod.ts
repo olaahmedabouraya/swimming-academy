@@ -3,6 +3,6 @@
 // This file is modified at build time by replace-api-url.js
 export const environment = {
   production: true,
-  apiUrl: 'https://swimming-academy.wuaze.com/api'
+  apiUrl: 'https://swimming-academy-api.onrender.com/api'
 };
 
