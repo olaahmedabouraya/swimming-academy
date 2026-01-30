@@ -11,6 +11,16 @@ class LoginRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Determine if the request expects JSON.
+     *
+     * @return bool
+     */
+    public function expectsJson(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [
