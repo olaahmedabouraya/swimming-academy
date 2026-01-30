@@ -20,3 +20,11 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
+# Prevent ad injection for API routes
+<IfModule mod_headers.c>
+    <FilesMatch "^(api|index\.php)">
+        Header set X-Content-Type-Options "nosniff"
+        Header set Content-Type "application/json"
+    </FilesMatch>
+</IfModule>
+

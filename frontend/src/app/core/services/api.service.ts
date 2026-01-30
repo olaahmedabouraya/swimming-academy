@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -41,46 +41,69 @@ export class ApiService {
     const url = `${this.apiUrl}${endpoint}`;
     console.log('POST request to:', url);
     console.log('Request body:', body);
-    return this.http.post<T>(url, body, {
+    
+    // Use text response type to handle InfinityFree ad injection
+    return this.http.post(url, body, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
       },
-      responseType: 'json' as 'json'
+      responseType: 'text'
     }).pipe(
-      // Add error handling to detect HTML responses
+      map((responseText: string) => {
+        // Check if response is HTML (InfinityFree ad injection)
+        if (responseText.includes('<!doctype html>') || 
+            responseText.includes('<html>') || 
+            responseText.includes('aes.js') ||
+            responseText.includes('This site requires Javascript')) {
+          
+          console.error('❌ InfinityFree is injecting HTML/ads into API response!');
+          console.error('Attempting to extract JSON from HTML response...');
+          
+          // Try to extract JSON from the HTML response
+          // Look for JSON objects in the response
+          const jsonMatches = responseText.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g);
+          if (jsonMatches && jsonMatches.length > 0) {
+            // Try each potential JSON match
+            for (const match of jsonMatches) {
+              try {
+                const jsonData = JSON.parse(match);
+                // Check if it looks like our API response
+                if (jsonData.message || jsonData.user || jsonData.token || jsonData.errors) {
+                  console.log('✅ Successfully extracted JSON from HTML response');
+                  return jsonData as T;
+                }
+              } catch (e) {
+                // Not valid JSON, continue
+              }
+            }
+          }
+          
+          // If we can't extract JSON, throw an error
+          throw new Error('Hosting service is injecting ads into API responses. The response was modified and could not be parsed.');
+        }
+        
+        // Try to parse as JSON
+        try {
+          return JSON.parse(responseText) as T;
+        } catch (e) {
+          console.error('Failed to parse response as JSON:', responseText.substring(0, 200));
+          throw new Error('Invalid JSON response from server');
+        }
+      }),
       catchError((error: any) => {
         console.error('API Error Details:', {
           status: error.status,
           statusText: error.statusText,
           url: error.url || url,
-          error: error.error
+          message: error.message
         });
-        
-        // Check if response is HTML
-        if (error.error) {
-          const errorStr = typeof error.error === 'string' ? error.error : JSON.stringify(error.error);
-          if (errorStr.includes('<!doctype html>') || errorStr.includes('This site requires Javascript')) {
-            console.error('❌ Received HTML instead of JSON!');
-            console.error('Request URL:', url);
-            console.error('Current API URL:', this.apiUrl);
-            console.error('Error response:', errorStr.substring(0, 500));
-            console.error('Possible causes:');
-            console.error('  1. API_URL in Vercel is wrong');
-            console.error('  2. CORS issue - backend not allowing frontend domain');
-            console.error('  3. Request is hitting frontend instead of backend');
-            throw new Error('API returned HTML instead of JSON. Check API_URL and CORS configuration.');
-          }
-        }
         
         // Check for CORS errors
         if (error.status === 0 || error.statusText === 'Unknown Error') {
           console.error('❌ CORS Error or Network Error!');
           console.error('Request URL:', url);
-          console.error('This usually means:');
-          console.error('  1. CORS not configured on backend');
-          console.error('  2. Backend is down');
-          console.error('  3. Network connectivity issue');
         }
         
         throw error;
